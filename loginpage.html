@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Annex lane 1 Login portal</title>
+  <link rel="icon" type="image/x-icon" href="Annex Katanga.ico">
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<!--Body-->
+<body class="login-page">
+  <div class="video-bg" aria-hidden="true">
+    <video id="bgVideo" autoplay muted loop playsinline>
+      <source src="video/katvid.mp4" type="video/mp4">
+    </video>
+  </div>
+
+  <div class="content">
+    <div class="hero">
+      <img class="logo" src="Images/katanga logo1.png" alt="Katanga Annex Lane One logo">
+      <p class="under">Katanga Annex Lane One</p>
+      <h1 class="h1">Welcome</h1>
+      <p class="h2">Secure student access portal</p>
+    </div>
+
+    <div class="glass">
+      <h2 class="login-title">Student Access</h2>
+
+      <div class="auth-toggle" role="tablist" aria-label="Authentication">
+        <button class="auth-tab is-active" id="loginTab" type="button">Login</button>
+        <button class="auth-tab" id="signupTab" type="button">Sign Up</button>
+      </div>
+
+      <form id="loginForm">
+        <div id="signupFields" class="hidden">
+          <div class="form-field">
+            <label>Name</label>
+            <input type="text" id="fullName" name="fullName" placeholder="Boateng Adams"
+                 autocomplete="name"
+                 pattern="[A-Za-z]+(?:[\\-'][A-Za-z]+)*(?:\\s+[A-Za-z]+(?:[\\-'][A-Za-z]+)*)+"
+                 title="Enter at least two names. Hyphens/apostrophes allowed (e.g., Boateng Adams, Osei-Annan, O'Connor).">
+          </div>
+          <div class="form-field">
+            <label>Student ID</label>
+            <input type="text" id="studentId" name="studentId" placeholder="2500000001"
+                 inputmode="numeric"
+                 pattern="\\d(?:[ -]?\\d){9,}"
+                 title="Student ID should be at least 10 digits. Spaces or hyphens are not allowed.">
+          </div>
+          <div class="form-field">
+            <label>Room Number</label>
+            <select id="signupRoom" name="signupRoom">
+              <option value="">-- Select Room --</option>
+              <option>Room 1A</option><option>Room 2A</option><option>Room 3A</option>
+              <option>Room 4A</option><option>Room 5A</option><option>Room 6A</option>
+              <option>Room 7A</option><option>Room 8A</option><option>Room 9A</option>
+              <option>Room 10A</option><option>Room 11A</option><option>Room 12A</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Program of Study</label>
+            <input type="text" id="program" name="program" placeholder="Computer Science">
+          </div>
+        </div>
+
+        <div class="form-field inline-field">
+          <label>Email</label>
+          <input type="email" id="email" name="email" placeholder="name@st.knust.edu.gh" required autocomplete="email"
+                 pattern="^[A-Za-z0-9._%+-]+@st\\.knust\\.edu\\.gh$"
+                 title="Use your KNUST student email in the format name@st.knust.edu.gh">
+        </div>
+
+        <div class="form-field inline-field">
+          <label>Password</label>
+          <div class="password-wrap">
+            <input type="password" id="password" name="password" placeholder="••••••••" required minlength="6">
+            <button type="button" class="password-toggle" id="passwordToggle" aria-label="Show password" aria-pressed="false">Show</button>
+          </div>
+        </div>
+
+        <input type="submit" id="authSubmit" value="Login">
+      </form>
+      <p class="auth-note" id="authMessage"></p>
+
+    </div>
+  </div>
+
+  <script type="module" src="script.js"></script>
+  <script type="module" src="auth.js"></script>
+</body>
+</html>

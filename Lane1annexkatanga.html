@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Student Portal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="styles.css">
+ <link rel="icon" type="image/x-icon"
+  href="Annex Katanga.ico"/>
+</head>
+<body class="katanga-page">
+
+<header class="page-header">
+  <img src="Images/katanga logo1.png" alt="Katanga Hall" class="logo">
+  <div class="header-text">
+    <p class="kicker">University Hall</p>
+    <h1>Katanga</h1>
+    <p class="header-subtitle">Annex Lane One Fault Reporting Portal</p>
+  </div>
+  <button class="toggle-reports-btn" id="studentLogoutBtn" type="button">Logout</button>
+  
+</header>
+<main class="container">
+  <div class="card card-hero">
+    <div class="card-head">
+      <div>
+        <p class="tag">Fault Report</p>
+        <h1>KATANGA ANNEX LANE ONE</h1>
+        <p class="subtitle">Select your room and report any fault.</p>
+      </div>
+      <div class="card-badge">
+        <span>24/7</span>
+        <small>Support</small>
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div>
+        <label for="studentName">Student Name</label>
+        <input type="text" id="studentName" placeholder="Enter your name">
+      </div>
+      <div>
+        <label for="studentId">Student ID</label>
+        <input type="text" id="studentId" placeholder="Enter your student ID">
+      </div>
+      <div>
+        <label for="studentLogin">Login</label>
+        <input type="text" id="studentLogin" placeholder="Login email" readonly>
+      </div>
+    </div>
+
+    <label for="room">Room Number</label>
+    <select id="room">
+      <option value="">-- Select Room --</option>
+      <option>Room 1A</option><option>Room 2A</option><option>Room 3A</option>
+      <option>Room 4A</option><option>Room 5A</option><option>Room 6A</option>
+      <option>Room 7A</option><option>Room 8A</option><option>Room 9A</option>
+      <option>Room 10A</option><option>Room 11A</option><option>Room 12A</option>
+    </select>
+
+
+    <div id="faultSection" class="hidden">
+
+      <label>Upload Fault Image(s)</label>
+      <input type="file" id="faultImages" accept="image/*" multiple>
+      <div id="preview" class="preview"></div>
+
+      <div class="faults">
+
+        <!-- Faulty Bulb -->
+        <div class="fault-card">
+          <input type="checkbox" value="Faulty Bulb">
+          <div class="icon bulb"></div>
+          <span>Faulty Bulb</span>
+        </div>
+
+        <!-- Faulty Fan -->
+        <div class="fault-card">
+          <input type="checkbox" value="Faulty Fan">
+          <div class="icon fan"></div>
+          <span>Faulty Fan</span>
+        </div>
+
+        <!-- Fan Regulator -->
+        <div class="fault-card">
+          <input type="checkbox" value="Faulty Fan Regulator">
+          <div class="icon regulator"></div>
+          <span>Fan Regulator</span>
+        </div>
+
+        <!-- Socket -->
+        <label class="fault-card has-select">
+          <div class="icon socket"></div>
+          <span>Faulty Socket</span>
+          <select id="socketType">
+            <option value="Faulty Socket">Socket Location</option>
+            <option>Balcony Socket</option>
+            <option>Inside Wall Socket</option>
+          </select>
+        </label>
+
+        <!-- Bed -->
+        <div class="fault-card has-select">
+          <div class="icon bed"></div>
+          <span>Broken Bed</span>
+          <select id="bedType">
+            <option value="Broken Bed">Bed Type</option>
+            <option>Metal Bed</option>
+            <option>Wooden Bed</option>
+          </select>
+        </div>
+
+        <!-- Door Handle -->
+        <div class="fault-card">
+          <input type="checkbox" value="Broken Door Handle">
+          <div class="icon door-handle"></div>
+          <span>Broken Door Handle</span>
+        </div>
+
+        <!-- Louvers -->
+        <div class="fault-card">
+          <input type="checkbox" value="Broken Louvers">
+          <div class="icon louvers"></div>
+          <span>Broken Louvers</span>
+        </div>
+
+        <!-- Shelves -->
+        <div class="fault-card">
+          <input type="checkbox" value="Broken Shelves">
+          <div class="icon shelves"></div>
+          <span>Broken Shelves</span>
+        </div>
+
+        <!-- Drainage -->
+        <div class="fault-card">
+          <input type="checkbox" value="Choke Drainage">
+          <div class="icon drainage"></div>
+          <span>Choke Drainage</span>
+        </div>
+
+        <!-- Door Lock -->
+        <div class="fault-card">
+          <input type="checkbox" value="Door Lock Fault">
+          <div class="icon door-lock"></div>
+          <span>Door Lock Fault</span>
+        </div>
+
+      </div>
+
+      <button class="submit-btn" onclick="submitReport()">Submit Report</button>
+    </div>
+  </div>
+
+  <div class="card card-hero">
+    <div class="card-head">
+      <div>
+        <p class="tag">My Reports</p>
+        <h1>TRACK YOUR REQUESTS</h1>
+        <p class="subtitle">View reported faults and their status.</p>
+      </div>
+    </div>
+    <button class="toggle-reports-btn" id="toggleReportsBtn" type="button">View Reports</button>
+    <div id="studentReports" class="reports-list collapsible"></div>
+  </div>
+</main>
+
+<script type="module" src="script.js"></script>
+</body>
+</html>

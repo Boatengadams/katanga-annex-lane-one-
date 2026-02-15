@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" type="image/x-icon" href="Annex Katanga.ico"/>
+</head>
+<body class="katanga-page admin-page">
+<header class="page-header admin-header">
+  <button class="menu-btn" id="menuBtn" type="button" aria-label="Open dashboard">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="header-text">
+    <p class="kicker">University Hall</p>
+    <h1>Katanga</h1>
+    <p class="header-subtitle">Admin Fault Dashboard</p>
+    <p class="live-alert" id="liveAlert">No live alerts yet.</p>
+  </div>
+  <img src="Images/katanga logo1.png" alt="Katanga Hall" class="logo">
+</header>
+
+<div class="admin-shell">
+  <aside class="admin-drawer" id="adminDrawer">
+    <div class="drawer-head">
+      <img src="Images/katanga logo1.png" alt="Katanga Hall" class="logo">
+      <div>
+        <p class="kicker">Admin</p>
+        <h2>Dashboard</h2>
+      </div>
+    </div>
+    <nav class="drawer-nav">
+      <button class="drawer-link" data-target="faultHub">Fault Items & Reports</button>
+      <button class="drawer-link" data-target="hallStats">Hall Statistics</button>
+      <button class="drawer-link" data-target="pendingUsers">
+        Pending Students
+        <span class="nav-badge hidden" id="pendingCountBadge">0</span>
+      </button>
+      <button class="drawer-link" data-target="adminTools">Admin Tools</button>
+      <button class="drawer-link logout-link" id="adminLogoutBtn">Logout</button>
+    </nav>
+  </aside>
+  <div class="drawer-backdrop" id="drawerBackdrop"></div>
+
+  <main class="container admin-main">
+    <div id="overviewSection" class="section-anchor"></div>
+    <div class="card card-hero admin-panel" id="faultHubSection">
+      <div class="card-head">
+        <div>
+          <p class="tag">Fault Items</p>
+          <h1>FAULT ITEMS</h1>
+          <p class="subtitle">Click an item to view reports, rooms, and student details.</p>
+        </div>
+      </div>
+      <div class="room-view hidden" id="roomDetailView">
+        <div class="room-view-header">
+          <div>
+            <p class="tag">Room Details</p>
+            <h2 id="roomDetailTitle">Room</h2>
+            <p class="subtitle" id="roomDetailSubtitle">Details for selected room and fault.</p>
+          </div>
+          <div class="room-view-actions">
+            <button class="done-btn" id="roomDetailDoneBtn" type="button">Mark Room Done</button>
+            <button class="toggle-reports-btn" id="roomDetailBackBtn" type="button">Back to Faults</button>
+          </div>
+        </div>
+        <div class="reports-list" id="roomDetailReports"></div>
+      </div>
+      <div class="report-block">
+        <div class="card-head">
+          <div>
+            <p class="tag">Notifications</p>
+            <h1>LIVE COMPLAINT NOTIFICATIONS</h1>
+            <p class="subtitle">Latest complaints from students across rooms.</p>
+          </div>
+        </div>
+        <div id="liveNotifications" class="reports-list"></div>
+      </div>
+      <div id="faultItems" class="faults"></div>
+      <div id="faultPreview" class="fault-preview hidden"></div>
+      <div class="report-block analytics-block">
+        <div class="card-head">
+          <div>
+            <p class="tag">Analytics</p>
+            <h1>FAULT INSIGHTS</h1>
+            <p class="subtitle">Realtime summaries for the selected fault.</p>
+          </div>
+        </div>
+        <div class="analytics-grid">
+          <div class="report-card analytics-summary" id="analyticsSummary"></div>
+          <div class="report-card analytics-chart">
+            <canvas id="reportChart" height="160"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="report-block">
+        <div class="card-head">
+          <div>
+            <p class="tag">Rooms</p>
+            <h1>ROOMS WITH THIS FAULT</h1>
+            <p class="subtitle">Select a fault to see affected rooms.</p>
+          </div>
+        </div>
+        <div id="faultRooms" class="reports-list"></div>
+      </div>
+      <div class="report-block">
+        <div class="card-head">
+          <div>
+            <p class="tag">Reports</p>
+            <h1>ITEM DETAILS</h1>
+            <p class="subtitle">Status updates reflect in student portals.</p>
+          </div>
+        </div>
+        <div id="reports"></div>
+      </div>
+    </div>
+
+    <div class="card card-hero admin-panel hidden" id="pendingUsersSection">
+      <div class="card-head">
+        <div>
+          <p class="tag">Approvals</p>
+          <h1>PENDING STUDENTS</h1>
+          <p class="subtitle">Approve students before they can log in.</p>
+        </div>
+      </div>
+      <div id="pendingUsers" class="reports-list"></div>
+    </div>
+
+    <div class="card card-hero admin-panel hidden hall-stats-panel" id="hallStatsSection">
+      <div class="card-head">
+        <div>
+          <p class="tag">Hall Statistics</p>
+          <h1>ROOM & ITEM RANKING</h1>
+          <p class="subtitle">Ranked performance for rooms and fault items across the whole hall.</p>
+        </div>
+      </div>
+      <div class="hall-kpi-grid">
+        <div class="hall-kpi-card">
+          <p>Total Submissions</p>
+          <h3 id="hallTotalReports">0</h3>
+        </div>
+        <div class="hall-kpi-card">
+          <p>Most Reported Room</p>
+          <h3 id="hallTopRoom">-</h3>
+        </div>
+        <div class="hall-kpi-card">
+          <p>Most Faulty Item</p>
+          <h3 id="hallTopFault">-</h3>
+        </div>
+      </div>
+      <div class="analytics-grid hall-stats-grid">
+        <div class="report-card">
+          <h3>Room Ranking (Most Reported)</h3>
+          <div class="table-wrap">
+            <table class="stats-table">
+              <thead>
+                <tr><th>Rank</th><th>Room</th><th>Reports</th></tr>
+              </thead>
+              <tbody id="hallRoomRankingTable"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="report-card analytics-chart">
+          <h3>Room Ranking Chart</h3>
+          <canvas id="hallRoomRankingChart" height="180"></canvas>
+        </div>
+        <div class="report-card">
+          <h3>Fault-Item Ranking (Most Faulty)</h3>
+          <div class="table-wrap">
+            <table class="stats-table">
+              <thead>
+                <tr><th>Rank</th><th>Fault Item</th><th>Reports</th></tr>
+              </thead>
+              <tbody id="hallFaultRankingTable"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="report-card analytics-chart">
+          <h3>Fault-Item Ranking Chart</h3>
+          <canvas id="hallFaultRankingChart" height="180"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="card card-hero admin-panel hidden" id="adminTools">
+      <div class="card-head">
+        <div>
+          <p class="tag">Admin Tools</p>
+          <h1>SYSTEM SETUP</h1>
+          <p class="subtitle">Create a room or add a fault item to the system.</p>
+        </div>
+      </div>
+      <div class="class-tool">
+        <button class="toggle-reports-btn" id="toggleCreateRoomTool" type="button">Create Room</button>
+        <div id="createRoomTool" class="hidden">
+          <div class="form-grid">
+            <div>
+              <label>Room Name</label>
+              <input type="text" id="newRoomName" placeholder="14A or GA6">
+            </div>
+          </div>
+          <button class="done-btn" id="createRoomBtn" type="button">Register Room</button>
+          <p class="auth-note" id="createRoomStatus"></p>
+        </div>
+      </div>
+
+      <div class="class-tool">
+        <button class="toggle-reports-btn" id="toggleCreateFaultTool" type="button">Create Fault Item</button>
+        <div id="createFaultTool" class="hidden">
+          <div class="form-grid">
+            <div>
+              <label>Fault Label</label>
+              <input type="text" id="newFaultLabel" placeholder="Faulty Window">
+            </div>
+            <div>
+              <label>Fault Icon Image</label>
+              <input type="file" id="newFaultIconFile" accept="image/*">
+            </div>
+          </div>
+          <div class="report-images" id="newFaultIconPreviewWrap">
+            <img id="newFaultIconPreview" src="Images/faultybulb.png" alt="Selected fault icon preview">
+          </div>
+          <button class="done-btn" id="createFaultBtn" type="button">Register Fault Item</button>
+          <p class="auth-note" id="createFaultStatus"></p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "firebase/app": "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js",
+    "firebase/auth": "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js",
+    "firebase/messaging": "https://www.gstatic.com/firebasejs/12.9.0/firebase-messaging.js",
+    "firebase/storage": "https://www.gstatic.com/firebasejs/12.9.0/firebase-storage.js"
+  }
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script type="module" src="admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fault Rooms - Admin</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" type="image/x-icon" href="Annex Katanga.ico">
+</head>
+<body class="katanga-page admin-page">
+  <header class="page-header admin-header">
+    <button class="menu-btn" id="backToAdminBtn" type="button" aria-label="Back to admin portal">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="header-text">
+      <p class="kicker">Fault Subportal</p>
+      <h1 id="faultSubportalTitle">Fault Rooms</h1>
+      <p class="header-subtitle">Tick room as done to resolve all open reports for this fault.</p>
+      <p class="live-alert" id="faultSubportalAlert">Loading rooms...</p>
+    </div>
+    <button class="toggle-reports-btn" id="subportalLogoutBtn" type="button">Logout</button>
+  </header>
+
+  <main class="container admin-main">
+    <div class="card card-hero admin-panel" id="faultRoomPortal">
+      <div class="card-head">
+        <div>
+          <p class="tag">Rooms With Fault</p>
+          <h1 id="faultHeading">FAULT</h1>
+          <p class="subtitle">Each tick marks all pending complaints in that room as resolved.</p>
+        </div>
+      </div>
+      <div id="roomFaultList" class="reports-list"></div>
+    </div>
+  </main>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "firebase/app": "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js",
+      "firebase/auth": "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js",
+      "firebase/firestore": "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js",
+      "firebase/messaging": "https://www.gstatic.com/firebasejs/12.9.0/firebase-messaging.js"
+    }
+  }
+  </script>
+  <script type="module" src="admin-fault.js"></script>
+</body>
+</html>

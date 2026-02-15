@@ -1,0 +1,133 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function userExists() {
+      return isSignedIn() && userDoc().exists();
+    }
+
+    function userRole() {
+      return userExists() ? userDoc().data.role : null;
+    }
+
+    function isSuperAdmin() {
+      return isSignedIn() && (
+        request.auth.token.superAdmin == true ||
+        userRole() == "superAdmin" ||
+        userRole() == "SuperAdmin" ||
+        userRole() == "super admin" ||
+        userRole() == "Super Admin" ||
+        userRole() == "super_admin" ||
+        userRole() == "superadmin"
+      );
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.admin == true ||
+        request.auth.token.superAdmin == true ||
+        isSuperAdmin() ||
+        userRole() == "Admin" ||
+        userRole() == "admin" ||
+        userRole() == "administrator"
+      );
+    }
+
+    function isApprovedUser() {
+      return userExists() && userDoc().data.approved == true;
+    }
+
+    match /users/{uid} {
+      allow create: if isSignedIn()
+        && request.auth.uid == uid
+        && request.resource.data.role == "student"
+        && request.resource.data.approved == false
+        && request.resource.data.room is string
+        && request.resource.data.room.size() > 0;
+
+      allow read: if isAdmin() || (isSignedIn() && request.auth.uid == uid);
+
+      allow update: if isSignedIn() && (
+        isSuperAdmin() ||
+        (
+          isAdmin() && !isSuperAdmin() &&
+          request.resource.data.role == resource.data.role &&
+          request.resource.data.approved == resource.data.approved
+        ) ||
+        (
+          request.auth.uid == uid &&
+          request.resource.data.role == resource.data.role &&
+          request.resource.data.room == resource.data.room &&
+          request.resource.data.approved == resource.data.approved
+        )
+      );
+
+      allow delete: if isSuperAdmin();
+    }
+
+    match /faults/{faultId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /rooms/{roomId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+
+      match /reports/{reportId} {
+        allow create: if isApprovedUser() && request.resource.data.createdBy == request.auth.uid;
+        allow read: if isAdmin() || (isApprovedUser() && resource.data.createdBy == request.auth.uid);
+        allow update: if isAdmin() || (isApprovedUser() && resource.data.createdBy == request.auth.uid);
+        allow delete: if isAdmin();
+      }
+
+      match /students/{studentUid} {
+        allow read: if isAdmin() || (isApprovedUser() && request.auth.uid == studentUid);
+        allow create, update, delete: if isAdmin();
+
+        match /reports/{reportId} {
+          allow create: if isApprovedUser()
+            && request.auth.uid == studentUid
+            && request.resource.data.createdBy == request.auth.uid;
+
+          allow read: if isAdmin() || (isApprovedUser() && request.auth.uid == studentUid);
+
+          allow update: if isAdmin() || (
+            isApprovedUser() &&
+            request.auth.uid == studentUid &&
+            resource.data.createdBy == request.auth.uid
+          );
+
+          allow delete: if isAdmin();
+        }
+      }
+    }
+
+    match /reports/{reportId} {
+      allow create: if isApprovedUser() && request.resource.data.createdBy == request.auth.uid;
+      allow read: if isAdmin() || (isApprovedUser() && resource.data.createdBy == request.auth.uid);
+      allow update: if isAdmin() || (isApprovedUser() && resource.data.createdBy == request.auth.uid);
+      allow delete: if isAdmin();
+    }
+
+    match /adminActivity/{activityId} {
+      allow create: if isSignedIn();
+      allow read: if isAdmin();
+      allow update, delete: if false;
+    }
+
+    match /auditLogs/{logId} {
+      allow create: if isSignedIn();
+      allow read: if isAdmin();
+      allow update, delete: if false;
+    }
+  }
+}
