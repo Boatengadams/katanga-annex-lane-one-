@@ -1949,3 +1949,151 @@ span {
     padding: 22px;
   }
 }
+
+/* =====================
+   Rules Page
+===================== */
+.student-header-actions,
+.rules-header-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.rules-page {
+  position: relative;
+  min-height: 100vh;
+}
+
+.rules-page::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: url("Images/katanga logo1.png") center/62vmin no-repeat;
+  opacity: 0.12;
+  filter: saturate(1.1) contrast(1.05);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.rules-header,
+.rules-container {
+  position: relative;
+  z-index: 1;
+}
+
+.rules-container {
+  max-width: 1120px;
+}
+
+.rules-glass {
+  position: relative;
+  background: linear-gradient(135deg, rgba(19, 28, 45, 0.72), rgba(10, 15, 28, 0.64));
+  border: 1px solid rgba(255, 208, 74, 0.35);
+  border-radius: 26px;
+  padding: 34px 28px;
+  box-shadow: 0 28px 90px rgba(3, 8, 20, 0.5);
+  backdrop-filter: blur(14px) saturate(130%);
+  color: #f8fafc;
+}
+
+.rules-glass::after {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 208, 74, 0.22);
+  pointer-events: none;
+}
+
+.rules-glass .tag {
+  background: rgba(255, 204, 51, 0.2);
+  color: #ffd75f;
+}
+
+.rules-glass h2,
+.rules-glass h3 {
+  margin: 0 0 10px;
+  color: #ffdd78;
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.rules-glass h2 {
+  font-size: clamp(1.2rem, 2.7vw, 1.8rem);
+}
+
+.rules-glass h3 {
+  font-size: 0.94rem;
+  margin-top: 24px;
+}
+
+.rules-lead {
+  margin: 0 0 18px;
+  color: rgba(241, 245, 249, 0.92);
+  line-height: 1.6;
+  border-left: 4px solid rgba(255, 204, 51, 0.48);
+  padding-left: 12px;
+}
+
+.rules-list {
+  margin: 0;
+  padding-left: 22px;
+  display: grid;
+  gap: 10px;
+}
+
+.rules-list li {
+  color: rgba(241, 245, 249, 0.95);
+  line-height: 1.6;
+}
+
+.rules-list strong {
+  color: #ffe8a5;
+}
+
+.declaration-card {
+  margin-top: 24px;
+  background: linear-gradient(150deg, rgba(255, 204, 51, 0.16), rgba(255, 204, 51, 0.05));
+  border: 1px solid rgba(255, 204, 51, 0.35);
+  border-radius: 18px;
+  padding: 18px 16px;
+}
+
+.declaration-card p {
+  margin: 0;
+  line-height: 1.7;
+  color: #fff7e3;
+}
+
+.declaration-card strong {
+  color: #ffd24f;
+  font-weight: 800;
+}
+
+.declaration-date {
+  margin-top: 10px !important;
+  font-size: 0.92rem;
+  opacity: 0.95;
+}
+
+@media (max-width: 760px) {
+  .student-header-actions,
+  .rules-header-actions {
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-start;
+  }
+
+  .rules-glass {
+    padding: 26px 18px;
+  }
+
+  .rules-page::before {
+    background-size: 78vmin;
+    opacity: 0.1;
+  }
+}

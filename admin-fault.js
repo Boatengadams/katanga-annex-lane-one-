@@ -14,6 +14,14 @@ import { app } from "./src/firebase/firebase.js";
 import { db, reportsRef, usersRef } from "./src/firebase/firestore.js";
 
 const auth = getAuth(app);
+const LOGIN_PAGE = "index.html";
+const goToLogin = () => window.location.replace(LOGIN_PAGE);
+
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted && !auth.currentUser) {
+    goToLogin();
+  }
+});
 
 const params = new URLSearchParams(window.location.search);
 const selectedFaultId = params.get("fault") || "";
@@ -235,7 +243,7 @@ const initInteractions = () => {
   if (subportalLogoutBtn) {
     subportalLogoutBtn.addEventListener("click", async () => {
       await signOut(auth);
-      window.location.href = "loginpage.html";
+      goToLogin();
     });
   }
 
@@ -294,7 +302,7 @@ const initReports = () => {
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
-    window.location.href = "loginpage.html";
+    goToLogin();
     return;
   }
 
@@ -315,7 +323,7 @@ onAuthStateChanged(auth, async (user) => {
 
   if (!(claimsAdmin || roleAdmin)) {
     await signOut(auth);
-    window.location.href = "loginpage.html";
+    goToLogin();
     return;
   }
 

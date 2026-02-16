@@ -22,10 +22,19 @@ const studentLogin = document.getElementById("studentLogin");
 const studentReports = document.getElementById("studentReports");
 const toggleReportsBtn = document.getElementById("toggleReportsBtn");
 const studentLogoutBtn = document.getElementById("studentLogoutBtn");
+const openRulesBtn = document.getElementById("openRulesBtn");
 
 let currentUser = null;
 let currentProfile = null;
 let reportsUnsub = null;
+const LOGIN_PAGE = "index.html";
+const goToLogin = () => window.location.replace(LOGIN_PAGE);
+
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted && !auth.currentUser) {
+    goToLogin();
+  }
+});
 
 const normalizeFaultType = (fault) => {
   if (!fault) return "";
@@ -277,11 +286,17 @@ if (toggleReportsBtn && studentReports) {
   });
 }
 
+if (openRulesBtn) {
+  openRulesBtn.addEventListener("click", () => {
+    window.location.href = "rules.html";
+  });
+}
+
 if (studentLogoutBtn) {
   studentLogoutBtn.addEventListener("click", async () => {
     try {
       await signOut(auth);
-      window.location.href = "loginpage.html";
+      goToLogin();
     } catch (err) {
       alert(err?.message || "Failed to logout.");
     }
@@ -295,7 +310,7 @@ if (auth && (studentName || studentReports || room)) {
     currentUser = user || null;
     if (!user) {
       if (room || studentReports) {
-        window.location.href = "loginpage.html";
+        goToLogin();
       }
       return;
     }

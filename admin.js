@@ -24,6 +24,14 @@ import { registerPush } from "./src/notifications/pushClient.js";
 
 const auth = getAuth(app);
 const storage = getStorage(app);
+const LOGIN_PAGE = "index.html";
+const goToLogin = () => window.location.replace(LOGIN_PAGE);
+
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted && !auth.currentUser) {
+    goToLogin();
+  }
+});
 
 let currentAdmin = null;
 let faults = [];
@@ -1030,7 +1038,7 @@ const initLogout = () => {
   adminLogoutBtn.addEventListener("click", async () => {
     try {
       await signOut(auth);
-      window.location.href = "loginpage.html";
+      goToLogin();
     } catch (err) {
       alert(err?.message || "Failed to logout.");
     }
@@ -1135,7 +1143,7 @@ const initAdmin = () => {
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
-    window.location.href = "loginpage.html";
+    goToLogin();
     return;
   }
 
@@ -1158,7 +1166,7 @@ onAuthStateChanged(auth, async (user) => {
   const isAdmin = claimsAdmin || roleAdmin;
   if (!isAdmin) {
     await signOut(auth);
-    window.location.href = "loginpage.html";
+    goToLogin();
     return;
   }
 
