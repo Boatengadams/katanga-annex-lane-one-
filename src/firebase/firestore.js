@@ -1,7 +1,25 @@
-import { getFirestore, collection } from "firebase/firestore";
+import {
+  collection,
+  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager
+} from "firebase/firestore";
 import { app } from "./firebase.js";
 
-export const db = getFirestore(app);
+let db;
+try {
+  db = initializeFirestore(app, {
+    localCache: persistentLocalCache({
+      tabManager: persistentMultipleTabManager()
+    })
+  });
+} catch (err) {
+  console.warn("Firestore persistent cache unavailable, using default mode.", err);
+  db = getFirestore(app);
+}
+
+export { db };
 
 export const faultsRef = collection(db, "faults");
 export const reportsRef = collection(db, "reports");
