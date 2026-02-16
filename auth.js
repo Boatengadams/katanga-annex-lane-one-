@@ -89,8 +89,9 @@ if (loginForm) {
     }
 
     try {
+      const normalizedEmail = email.value.trim().toLowerCase();
       if (mode === "signup") {
-        if (!emailRegex.test(email.value.trim())) {
+        if (!emailRegex.test(normalizedEmail)) {
           authMessage.textContent = "Use your KNUST email: name@st.knust.edu.gh";
           return;
         }
@@ -107,7 +108,7 @@ if (loginForm) {
           return;
         }
 
-        const cred = await createUserWithEmailAndPassword(auth, email.value, password.value);
+        const cred = await createUserWithEmailAndPassword(auth, normalizedEmail, password.value);
         await updateProfile(cred.user, { displayName: fullName.value.trim() });
 
         await setDoc(doc(db, "users", cred.user.uid), {
@@ -115,8 +116,8 @@ if (loginForm) {
           studentId: studentId.value.trim(),
           room: signupRoom.value,
           program: program.value.trim(),
-          login: email.value.trim(),
-          email: email.value.trim(),
+          login: normalizedEmail,
+          email: normalizedEmail,
           role: "student",
           approved: false,
           createdAt: serverTimestamp(),
@@ -128,7 +129,7 @@ if (loginForm) {
         clearAuthForm();
         return;
       } else {
-        const loginEmail = email.value.trim();
+        const loginEmail = normalizedEmail;
         const loginPassword = password.value;
         const cred = await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
         const tokenPromise = cred.user.getIdTokenResult(true);
