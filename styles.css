@@ -1560,6 +1560,11 @@ span {
   filter: brightness(0.8) saturate(0.95) blur(0.5px) contrast() ;
 }
 
+.login-page .video-bg video.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
 .login-page .video-bg::after {
   content: "";
   position: absolute;

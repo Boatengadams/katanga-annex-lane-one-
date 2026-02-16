@@ -234,6 +234,38 @@ async function submitReport() {
 const bgVideo = document.getElementById("bgVideo");
 if (bgVideo) {
   bgVideo.playbackRate = 1;
+  bgVideo.muted = true;
+  bgVideo.autoplay = true;
+  bgVideo.loop = true;
+  bgVideo.playsInline = true;
+
+  let playbackLocked = false;
+
+  const hideVideoIfBlocked = () => {
+    playbackLocked = true;
+    bgVideo.classList.add("is-hidden");
+  };
+
+  const tryPlayBgVideo = async () => {
+    if (playbackLocked) return;
+    try {
+      await bgVideo.play();
+      bgVideo.classList.remove("is-hidden");
+    } catch (err) {
+      hideVideoIfBlocked();
+    }
+  };
+
+  bgVideo.addEventListener("loadedmetadata", tryPlayBgVideo, { once: true });
+  bgVideo.addEventListener("canplay", tryPlayBgVideo, { once: true });
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) {
+      tryPlayBgVideo();
+    }
+  });
+  document.addEventListener("touchstart", tryPlayBgVideo, { passive: true, once: true });
+  document.addEventListener("click", tryPlayBgVideo, { once: true });
+  tryPlayBgVideo();
 }
 
 function renderStudentReports() {
