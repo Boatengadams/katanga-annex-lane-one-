@@ -28,6 +28,7 @@ const program = document.getElementById("program");
 
 let mode = "login";
 const emailRegex = /^[A-Za-z0-9._%+-]+@st\.knust\.edu\.gh$/;
+const studentEmailPattern = "^[A-Za-z0-9._%+-]+@st\\.knust\\.edu\\.gh$";
 
 const clearAuthForm = () => {
   if (fullName) fullName.value = "";
@@ -60,6 +61,17 @@ const setMode = (next) => {
   loginTab.classList.toggle("is-active", !isSignup);
   signupTab.classList.toggle("is-active", isSignup);
   authSubmit.value = isSignup ? "Create Account" : "Login";
+  if (email) {
+    if (isSignup) {
+      email.setAttribute("pattern", studentEmailPattern);
+      email.setAttribute("title", "Use your KNUST student email in the format name@st.knust.edu.gh");
+      email.setAttribute("placeholder", "name@st.knust.edu.gh");
+    } else {
+      email.removeAttribute("pattern");
+      email.setAttribute("title", "Enter your login email.");
+      email.setAttribute("placeholder", "Enter email");
+    }
+  }
   authMessage.textContent = "";
 };
 

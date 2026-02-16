@@ -1,4 +1,4 @@
-const STATIC_CACHE = "edutec-static-v1";
+const STATIC_CACHE = "edutec-static-v2";
 const SHELL_FILES = [
   "./",
   "./index.html",
@@ -14,7 +14,8 @@ const SHELL_FILES = [
   "./admin-fault.html",
   "./admin-fault.js",
   "./Annex%20Katanga.ico",
-  "./Images/katanga%20logo1.png"
+  "./Images/katanga%20logo1.png",
+  "./Images/faultybulb.png"
 ];
 
 self.addEventListener("install", (event) => {

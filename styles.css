@@ -1171,6 +1171,85 @@ span {
   background-image: url("Images/door-lock.png");
 }
 
+.katanga-page:not(.admin-page) .faults {
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 14px;
+}
+
+.katanga-page:not(.admin-page) .fault-card {
+  border: 1px solid rgba(198, 148, 10, 0.28);
+  border-radius: 18px;
+  padding: 18px 16px;
+  background:
+    linear-gradient(155deg, rgba(255, 255, 255, 0.92), rgba(255, 249, 230, 0.75));
+  box-shadow:
+    0 10px 24px rgba(15, 23, 42, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.katanga-page:not(.admin-page) .fault-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(214, 165, 20, 0.72);
+  box-shadow:
+    0 16px 30px rgba(133, 101, 16, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.86);
+}
+
+.katanga-page:not(.admin-page) .fault-card:has(input:checked) {
+  border-color: rgba(194, 142, 0, 0.92);
+  background:
+    linear-gradient(160deg, rgba(255, 235, 170, 0.88), rgba(255, 221, 114, 0.58));
+  box-shadow:
+    0 16px 32px rgba(153, 111, 9, 0.28),
+    0 0 0 3px rgba(255, 207, 77, 0.36);
+}
+
+.katanga-page:not(.admin-page) .fault-card > span {
+  letter-spacing: 0.04em;
+  font-size: 0.86rem;
+  color: #2b2206;
+  text-transform: uppercase;
+}
+
+.katanga-page:not(.admin-page) .icon {
+  width: 68px;
+  height: 68px;
+  margin: 0 auto 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(207, 158, 10, 0.35);
+  background: linear-gradient(160deg, rgba(255, 232, 155, 0.78), rgba(255, 210, 85, 0.42));
+  box-shadow: 0 10px 20px rgba(127, 93, 8, 0.2);
+}
+
+.katanga-page:not(.admin-page) .icon::before {
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.18));
+}
+
+.katanga-page:not(.admin-page) .fault-card input:checked + .icon {
+  border-color: rgba(154, 111, 0, 0.7);
+  box-shadow:
+    0 14px 22px rgba(153, 111, 9, 0.3),
+    inset 0 0 0 1px rgba(255, 238, 183, 0.72);
+}
+
+.katanga-page:not(.admin-page) .bulb::before {
+  background-image: url("Images/faultybulb.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.katanga-page:not(.admin-page) .fault-card select {
+  border-radius: 10px;
+  border-color: rgba(168, 122, 2, 0.4);
+  background-color: rgba(255, 251, 240, 0.96);
+  margin-top: 12px;
+}
+
 /* Preview */
 .preview img {
   width: 80px;
