@@ -18,15 +18,14 @@ service cloud.firestore {
       return userExists() ? userDoc().data.role : null;
     }
 
+    function roleText() {
+      return userRole() is string ? userRole() : "";
+    }
+
     function isSuperAdmin() {
       return isSignedIn() && (
         request.auth.token.superAdmin == true ||
-        userRole() == "superAdmin" ||
-        userRole() == "SuperAdmin" ||
-        userRole() == "super admin" ||
-        userRole() == "Super Admin" ||
-        userRole() == "super_admin" ||
-        userRole() == "superadmin"
+        roleText().matches("(?i)^\\s*super[ _]?admin\\s*$")
       );
     }
 
@@ -35,9 +34,7 @@ service cloud.firestore {
         request.auth.token.admin == true ||
         request.auth.token.superAdmin == true ||
         isSuperAdmin() ||
-        userRole() == "Admin" ||
-        userRole() == "admin" ||
-        userRole() == "administrator"
+        roleText().matches("(?i)^\\s*admin(istrator)?\\s*$")
       );
     }
 
@@ -59,8 +56,7 @@ service cloud.firestore {
         isSuperAdmin() ||
         (
           isAdmin() && !isSuperAdmin() &&
-          request.resource.data.role == resource.data.role &&
-          request.resource.data.approved == resource.data.approved
+          request.resource.data.role == resource.data.role
         ) ||
         (
           request.auth.uid == uid &&

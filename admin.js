@@ -15,7 +15,7 @@ import {
 } from "firebase/firestore";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { app } from "./src/firebase/firebase.js";
-import { db, faultsRef, reportsRef, usersRef } from "./src/firebase/firestore.js";
+import { db, faultsRef, usersRef } from "./src/firebase/firestore.js";
 import { computeAnalytics } from "./src/analytics/analyticsEngine.js";
 import { renderLineChart } from "./src/analytics/charts.js";
 import { logAudit } from "./src/audit/auditLogger.js";
@@ -45,6 +45,9 @@ let showingRoomDetail = false;
 let chartInstance = null;
 let hallRoomChartInstance = null;
 let hallFaultChartInstance = null;
+let refreshUiScheduled = false;
+const REPORT_STREAM_LIMIT = 220;
+const READ_NOTIFICATIONS_KEY = "adminReadNotifications";
 
 const reportsDiv = document.getElementById("reports");
 const faultItemsDiv = document.getElementById("faultItems");
@@ -84,6 +87,8 @@ const hallTotalReports = document.getElementById("hallTotalReports");
 const hallTopRoom = document.getElementById("hallTopRoom");
 const hallTopFault = document.getElementById("hallTopFault");
 const liveNotificationsDiv = document.getElementById("liveNotifications");
+const markNotificationsReadBtn = document.getElementById("markNotificationsReadBtn");
+const resetNotificationsBtn = document.getElementById("resetNotificationsBtn");
 const pendingCountBadge = document.getElementById("pendingCountBadge");
 const liveAlert = document.getElementById("liveAlert");
 
@@ -183,6 +188,41 @@ const refreshReportsCache = () => {
   });
   reportsCache = Array.from(merged.values())
     .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+};
+
+const getReportKey = (row) => row?.docPath || row?.id || "";
+
+const readNotificationSet = (() => {
+  try {
+    const raw = localStorage.getItem(READ_NOTIFICATIONS_KEY);
+    const data = raw ? JSON.parse(raw) : [];
+    return new Set(Array.isArray(data) ? data : []);
+  } catch {
+    return new Set();
+  }
+})();
+
+const saveReadNotificationSet = () => {
+  try {
+    localStorage.setItem(READ_NOTIFICATIONS_KEY, JSON.stringify(Array.from(readNotificationSet)));
+  } catch (err) {
+    console.warn("Failed to persist read notifications", err);
+  }
+};
+
+const getNotificationRows = (faultId = null, includeRead = false) => {
+  let rows = reportsCache.map(r => ({ ...r, status: normalizeStatus(r.status) }));
+  if (faultId) {
+    const fault = faults.find(f => f.id === faultId);
+    if (fault) {
+      rows = rows.filter(r => reportMatchesFault(r, faultId, getFaultLabel(fault)));
+    }
+  }
+  if (!includeRead) {
+    rows = rows.filter((r) => !readNotificationSet.has(getReportKey(r)));
+  }
+  rows.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+  return rows;
 };
 
 const getReportImages = (report) => {
@@ -309,57 +349,68 @@ const renderHallRankings = () => {
   `).join("");
 
   if (window.Chart && hallRoomRankingChart && hallFaultRankingChart) {
-    if (hallRoomChartInstance) hallRoomChartInstance.destroy();
-    if (hallFaultChartInstance) hallFaultChartInstance.destroy();
-
-    hallRoomChartInstance = new Chart(hallRoomRankingChart.getContext("2d"), {
-      type: "bar",
-      data: {
-        labels: topRooms.map(([room]) => room),
-        datasets: [{
-          label: "Reports",
-          data: topRooms.map(([, count]) => count),
-          backgroundColor: "rgba(241, 194, 50, 0.72)",
-          borderColor: "rgba(201, 141, 0, 0.95)",
-          borderWidth: 1.5,
-          borderRadius: 8
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(148,163,184,0.2)" } },
-          x: { grid: { display: false } }
+    if (!hallRoomChartInstance) {
+      hallRoomChartInstance = new Chart(hallRoomRankingChart.getContext("2d"), {
+        type: "bar",
+        data: {
+          labels: topRooms.map(([room]) => room),
+          datasets: [{
+            label: "Reports",
+            data: topRooms.map(([, count]) => count),
+            backgroundColor: "rgba(241, 194, 50, 0.72)",
+            borderColor: "rgba(201, 141, 0, 0.95)",
+            borderWidth: 1.5,
+            borderRadius: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(148,163,184,0.2)" } },
+            x: { grid: { display: false } }
+          }
         }
-      }
-    });
+      });
+    } else {
+      hallRoomChartInstance.data.labels = topRooms.map(([room]) => room);
+      hallRoomChartInstance.data.datasets[0].data = topRooms.map(([, count]) => count);
+      hallRoomChartInstance.update("none");
+    }
 
-    hallFaultChartInstance = new Chart(hallFaultRankingChart.getContext("2d"), {
-      type: "bar",
-      data: {
-        labels: topFaults.map(([item]) => item),
-        datasets: [{
-          label: "Reports",
-          data: topFaults.map(([, count]) => count),
-          backgroundColor: "rgba(11, 26, 52, 0.72)",
-          borderColor: "rgba(11, 26, 52, 0.98)",
-          borderWidth: 1.5,
-          borderRadius: 8
-        }]
-      },
-      options: {
-        indexAxis: "y",
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(148,163,184,0.2)" } },
-          y: { grid: { display: false } }
+    if (!hallFaultChartInstance) {
+      hallFaultChartInstance = new Chart(hallFaultRankingChart.getContext("2d"), {
+        type: "bar",
+        data: {
+          labels: topFaults.map(([item]) => item),
+          datasets: [{
+            label: "Reports",
+            data: topFaults.map(([, count]) => count),
+            backgroundColor: "rgba(11, 26, 52, 0.72)",
+            borderColor: "rgba(11, 26, 52, 0.98)",
+            borderWidth: 1.5,
+            borderRadius: 8
+          }]
+        },
+        options: {
+          indexAxis: "y",
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(148,163,184,0.2)" } },
+            y: { grid: { display: false } }
+          }
         }
-      }
-    });
+      });
+    } else {
+      hallFaultChartInstance.data.labels = topFaults.map(([item]) => item);
+      hallFaultChartInstance.data.datasets[0].data = topFaults.map(([, count]) => count);
+      hallFaultChartInstance.update("none");
+    }
   }
 };
 
@@ -397,18 +448,10 @@ const renderFaultItems = () => {
 
 const renderLiveNotifications = (faultId = null) => {
   if (!liveNotificationsDiv) return;
-  let rows = reportsCache.map(r => ({ ...r, status: normalizeStatus(r.status) }));
-  if (faultId) {
-    const fault = faults.find(f => f.id === faultId);
-    if (fault) {
-      rows = rows.filter(r => reportMatchesFault(r, faultId, getFaultLabel(fault)));
-    }
-  }
-  rows.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-  const recent = rows.slice(0, 12);
+  const recent = getNotificationRows(faultId).slice(0, 18);
 
   if (!recent.length) {
-    liveNotificationsDiv.innerHTML = "<p>No complaint notifications yet.</p>";
+    liveNotificationsDiv.innerHTML = "<p>No unread complaint notifications.</p>";
     return;
   }
 
@@ -434,9 +477,9 @@ const renderLiveNotifications = (faultId = null) => {
 
 const updateLiveAlert = () => {
   if (!liveAlert) return;
-  const openCount = reportsCache.filter(r => normalizeStatus(r.status) === "open").length;
+  const openCount = getNotificationRows(selectedFaultId).filter(r => normalizeStatus(r.status) === "open").length;
   liveAlert.textContent = openCount > 0
-    ? `${openCount} active complaint${openCount > 1 ? "s" : ""} require attention.`
+    ? `${openCount} unread complaint${openCount > 1 ? "s" : ""} require attention.`
     : "No live alerts yet.";
 };
 
@@ -476,11 +519,19 @@ const renderAnalytics = (faultId) => {
   const analytics = computeAnalytics(reports);
   const topRoom = analytics.mostFaultyRoom ? analytics.mostFaultyRoom[0] : "-";
   const topRoomCount = analytics.mostFaultyRoom ? analytics.mostFaultyRoom[1] : 0;
+  const resolutionRate = analytics.total ? Math.round((analytics.resolved / analytics.total) * 100) : 0;
+  const openRate = analytics.total ? Math.round((analytics.open / analytics.total) * 100) : 0;
+  const avgPerDay = Math.max(0, (analytics.total / 7)).toFixed(1);
 
   analyticsSummary.innerHTML = `
-    <div class="summary-row"><span>Total Reports</span><span>${analytics.total}</span></div>
-    <div class="summary-row"><span>Open</span><span>${analytics.open}</span></div>
-    <div class="summary-row"><span>Resolved</span><span>${analytics.resolved}</span></div>
+    <div class="insight-kpis">
+      <div class="insight-kpi"><p>Total</p><h4>${analytics.total}</h4></div>
+      <div class="insight-kpi"><p>Open</p><h4>${analytics.open}</h4></div>
+      <div class="insight-kpi"><p>Resolved</p><h4>${analytics.resolved}</h4></div>
+      <div class="insight-kpi"><p>Avg / Day</p><h4>${avgPerDay}</h4></div>
+    </div>
+    <div class="summary-row"><span>Resolution Rate</span><span>${resolutionRate}%</span></div>
+    <div class="summary-row"><span>Open Exposure</span><span>${openRate}%</span></div>
     <div class="summary-row"><span>Most Affected Room</span><span>${topRoom} (${topRoomCount})</span></div>
   `;
 
@@ -730,12 +781,17 @@ const resolveRoom = async (roomId, faultId, nextStatus = "resolved") => {
   const rows = getReportsForFault(faultId).filter(r => r.room === roomId && normalizeStatus(r.status) === targetState);
   if (!rows.length) return;
   try {
-    await Promise.all(
+    const writes = await Promise.allSettled(
       rows.map(r => updateDoc(doc(db, r.docPath), {
         status: nextStatus,
         resolvedAt: nextStatus === "resolved" ? serverTimestamp() : null
       }))
     );
+    const successCount = writes.filter((w) => w.status === "fulfilled").length;
+    const failedCount = writes.length - successCount;
+    if (failedCount > 0) {
+      alert(`Updated ${successCount} report(s). ${failedCount} failed due to permission/data mismatch.`);
+    }
     if (currentAdmin) {
       await logAudit(nextStatus === "resolved" ? "room_resolved" : "room_reopened", roomId, currentAdmin);
     }
@@ -871,7 +927,7 @@ const initPendingUsers = () => {
         pendingUsersDiv.innerHTML = "<p>No pending accounts.</p>";
         return;
       }
-      const canApproveUsers = currentAdmin?.isSuperAdmin === true;
+      const canApproveUsers = currentAdmin?.isAdmin === true;
       pendingUsersDiv.innerHTML = users.map(u => `
         <div class="report-card">
           <div class="report-head">
@@ -886,7 +942,7 @@ const initPendingUsers = () => {
           </div>
           ${canApproveUsers
             ? `<button class="done-btn" data-uid="${u.id}">Approve</button>`
-            : `<p class="auth-note">Only Super Admin can approve users.</p>`}
+            : `<p class="auth-note">You do not have permission to approve users.</p>`}
         </div>
       `).join("");
     },
@@ -902,8 +958,8 @@ const initPendingUsers = () => {
   pendingUsersDiv.addEventListener("click", async (e) => {
     const btn = e.target.closest(".done-btn");
     if (!btn) return;
-    if (currentAdmin?.isSuperAdmin !== true) {
-      alert("Only Super Admin can approve users.");
+    if (currentAdmin?.isAdmin !== true) {
+      alert("You do not have permission to approve users.");
       return;
     }
     const uid = btn.dataset.uid;
@@ -921,6 +977,30 @@ const initPendingUsers = () => {
       alert(err?.message || "Failed to approve user.");
     }
   });
+};
+
+const initNotificationActions = () => {
+  if (markNotificationsReadBtn) {
+    markNotificationsReadBtn.addEventListener("click", () => {
+      const visibleRows = getNotificationRows(selectedFaultId, true).slice(0, 18);
+      visibleRows.forEach((row) => {
+        const key = getReportKey(row);
+        if (key) readNotificationSet.add(key);
+      });
+      saveReadNotificationSet();
+      renderLiveNotifications(selectedFaultId);
+      updateLiveAlert();
+    });
+  }
+
+  if (resetNotificationsBtn) {
+    resetNotificationsBtn.addEventListener("click", () => {
+      readNotificationSet.clear();
+      saveReadNotificationSet();
+      renderLiveNotifications(selectedFaultId);
+      updateLiveAlert();
+    });
+  }
 };
 
 const initAdminTools = () => {
@@ -1046,71 +1126,52 @@ const initLogout = () => {
 };
 
 const initListeners = () => {
+  const refreshAdminViews = () => {
+    renderFaultItems();
+    renderHallRankings();
+    updateLiveAlert();
+    if (selectedFaultId) {
+      faultReports = getReportsForFault(selectedFaultId);
+      renderFaultPreview(selectedFaultId);
+      renderFaultRooms(selectedFaultId);
+      renderAnalytics(selectedFaultId);
+      renderLiveNotifications(selectedFaultId);
+      renderReports(selectedFaultId, selectedRoomId);
+      if (showingRoomDetail) {
+        renderRoomDetail(selectedRoomId, selectedFaultId);
+      }
+    } else {
+      renderFaultPreview(null);
+      renderFaultRooms(null);
+      renderLiveNotifications(null);
+      renderReports();
+      if (roomDetailView) roomDetailView.classList.add("hidden");
+      if (faultHubSection) faultHubSection.classList.remove("show-room-detail");
+      showingRoomDetail = false;
+    }
+  };
+
+  const scheduleAdminRefresh = () => {
+    if (refreshUiScheduled) return;
+    refreshUiScheduled = true;
+    requestAnimationFrame(() => {
+      refreshUiScheduled = false;
+      refreshAdminViews();
+    });
+  };
+
   onSnapshot(faultsRef, (snapshot) => {
     const remoteFaults = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
     faults = buildFaultCatalog(remoteFaults);
-    renderFaultItems();
-    renderLiveNotifications(selectedFaultId);
-    if (selectedFaultId) {
-      renderFaultPreview(selectedFaultId);
-      renderAnalytics(selectedFaultId);
-    }
+    scheduleAdminRefresh();
   });
 
-  const groupedReportsQuery = query(collectionGroup(db, "reports"), orderBy("createdAt", "desc"), limit(500));
+  const groupedReportsQuery = query(collectionGroup(db, "reports"), orderBy("createdAt", "desc"), limit(REPORT_STREAM_LIMIT));
   onSnapshot(groupedReportsQuery, (snapshot) => {
     groupedReportsCache = snapshot.docs.map(mapReportDoc);
+    legacyReportsCache = [];
     refreshReportsCache();
-    renderFaultItems();
-    renderHallRankings();
-    updateLiveAlert();
-    if (selectedFaultId) {
-      faultReports = getReportsForFault(selectedFaultId);
-      renderFaultPreview(selectedFaultId);
-      renderFaultRooms(selectedFaultId);
-      renderAnalytics(selectedFaultId);
-      renderLiveNotifications(selectedFaultId);
-      renderReports(selectedFaultId, selectedRoomId);
-      if (showingRoomDetail) {
-        renderRoomDetail(selectedRoomId, selectedFaultId);
-      }
-    } else {
-      renderFaultPreview(null);
-      renderFaultRooms(null);
-      renderLiveNotifications(null);
-      renderReports();
-      if (roomDetailView) roomDetailView.classList.add("hidden");
-      if (faultHubSection) faultHubSection.classList.remove("show-room-detail");
-      showingRoomDetail = false;
-    }
-  });
-
-  const legacyReportsQuery = query(reportsRef, orderBy("createdAt", "desc"), limit(500));
-  onSnapshot(legacyReportsQuery, (snapshot) => {
-    legacyReportsCache = snapshot.docs.map(mapReportDoc);
-    refreshReportsCache();
-    renderFaultItems();
-    renderHallRankings();
-    updateLiveAlert();
-    if (selectedFaultId) {
-      faultReports = getReportsForFault(selectedFaultId);
-      renderFaultPreview(selectedFaultId);
-      renderFaultRooms(selectedFaultId);
-      renderAnalytics(selectedFaultId);
-      renderLiveNotifications(selectedFaultId);
-      renderReports(selectedFaultId, selectedRoomId);
-      if (showingRoomDetail) {
-        renderRoomDetail(selectedRoomId, selectedFaultId);
-      }
-    } else {
-      renderFaultPreview(null);
-      renderFaultRooms(null);
-      renderLiveNotifications(null);
-      renderReports();
-      if (roomDetailView) roomDetailView.classList.add("hidden");
-      if (faultHubSection) faultHubSection.classList.remove("show-room-detail");
-      showingRoomDetail = false;
-    }
+    scheduleAdminRefresh();
   });
 };
 
@@ -1134,6 +1195,7 @@ const initAdmin = () => {
   renderFaultItems();
   initDrawer();
   initFaultInteractions();
+  initNotificationActions();
   initPendingUsers();
   initAdminTools();
   initLogout();

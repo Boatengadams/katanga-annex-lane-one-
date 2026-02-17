@@ -1,4 +1,4 @@
-const STATIC_CACHE = "edutec-static-v2";
+const STATIC_CACHE = "edutec-static-v3";
 const SHELL_FILES = [
   "./",
   "./index.html",

@@ -11,7 +11,7 @@ import {
   serverTimestamp
 } from "firebase/firestore";
 import { app } from "./src/firebase/firebase.js";
-import { db, reportsRef, usersRef } from "./src/firebase/firestore.js";
+import { db, usersRef } from "./src/firebase/firestore.js";
 
 const auth = getAuth(app);
 const LOGIN_PAGE = "index.html";
@@ -38,6 +38,7 @@ let reportsCache = [];
 let groupedReportsCache = [];
 let legacyReportsCache = [];
 let currentAdmin = null;
+const REPORT_STREAM_LIMIT = 220;
 
 const normalizeStatus = (status) => {
   if (!status) return "open";
@@ -202,20 +203,24 @@ const markRoomDone = async (roomId) => {
   if (!roomId || !selectedFaultId) return;
   const targets = getReportsForFault().filter((r) => r.room === roomId && normalizeStatus(r.status) === "open");
   if (!targets.length) return;
-  await Promise.all(
+  const writes = await Promise.allSettled(
     targets.map((r) => updateDoc(doc(db, r.docPath), {
       status: "resolved",
       resolvedAt: serverTimestamp(),
       resolvedBy: currentAdmin?.uid || ""
     }))
   );
+  const failedCount = writes.filter((w) => w.status === "rejected").length;
+  if (failedCount > 0) {
+    throw new Error(`Failed to update ${failedCount} report(s).`);
+  }
 };
 
 const markRoomUndone = async (roomId) => {
   if (!roomId || !selectedFaultId) return;
   const targets = getReportsForFault().filter((r) => r.room === roomId && normalizeStatus(r.status) === "resolved");
   if (!targets.length) return;
-  await Promise.all(
+  const writes = await Promise.allSettled(
     targets.map((r) => updateDoc(doc(db, r.docPath), {
       status: "pending",
       resolvedAt: null,
@@ -223,6 +228,10 @@ const markRoomUndone = async (roomId) => {
       reopenedBy: currentAdmin?.uid || ""
     }))
   );
+  const failedCount = writes.filter((w) => w.status === "rejected").length;
+  if (failedCount > 0) {
+    throw new Error(`Failed to update ${failedCount} report(s).`);
+  }
 };
 
 const toggleReportStatus = async (reportPath, nextStatus) => {
@@ -285,16 +294,10 @@ const initInteractions = () => {
 };
 
 const initReports = () => {
-  const groupedReportsQuery = query(collectionGroup(db, "reports"), orderBy("createdAt", "desc"), limit(500));
+  const groupedReportsQuery = query(collectionGroup(db, "reports"), orderBy("createdAt", "desc"), limit(REPORT_STREAM_LIMIT));
   onSnapshot(groupedReportsQuery, (snapshot) => {
     groupedReportsCache = snapshot.docs.map(mapReportDoc);
-    refreshReportsCache();
-    renderRooms();
-  });
-
-  const legacyReportsQuery = query(reportsRef, orderBy("createdAt", "desc"), limit(500));
-  onSnapshot(legacyReportsQuery, (snapshot) => {
-    legacyReportsCache = snapshot.docs.map(mapReportDoc);
+    legacyReportsCache = [];
     refreshReportsCache();
     renderRooms();
   });
