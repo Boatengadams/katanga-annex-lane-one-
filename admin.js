@@ -239,6 +239,18 @@ const getReportImages = (report) => {
   return [];
 };
 
+const renderReportImage = (url) => `
+  <a class="report-image-link" href="${escapeAttr(url)}" target="_blank" rel="noopener noreferrer">
+    <img
+      src="${escapeAttr(url)}"
+      alt="Fault evidence image"
+      loading="lazy"
+      decoding="async"
+      onerror="this.classList.add('is-broken');const link=this.closest('a');if(link){link.classList.add('is-broken');link.setAttribute('aria-label','Image unavailable');}this.removeAttribute('src');"
+    >
+  </a>
+`;
+
 const reportMatchesFault = (report, faultId, faultLabel) => {
   if (!report || !faultId) return false;
   if (report.faultId) return report.faultId === faultId;
@@ -601,7 +613,7 @@ const renderReports = (_faultId = null, roomId = null) => {
           </div>
           ${reportImages.length ? `
             <div class="report-images">
-              ${reportImages.map((url) => `<a href="${url}" target="_blank" rel="noopener noreferrer"><img src="${url}" alt="Fault evidence image"></a>`).join("")}
+              ${reportImages.map((url) => renderReportImage(url)).join("")}
             </div>
           ` : ""}
           <div class="report-faults">${(r.faults || []).map(f => `<span>${f}</span>`).join("")}</div>
@@ -704,11 +716,11 @@ const renderRoomDetail = (roomId, faultId) => {
             <div><strong>Date:</strong> ${dateValue ? dateValue.toLocaleString() : "-"}</div>
             <div><strong>Complaint:</strong> ${complaint}</div>
           </div>
-          ${reportImages.length ? `
-            <div class="report-images">
-              ${reportImages.map((url) => `<a href="${url}" target="_blank" rel="noopener noreferrer"><img src="${url}" alt="Fault evidence image"></a>`).join("")}
-            </div>
-          ` : ""}
+            ${reportImages.length ? `
+              <div class="report-images">
+                ${reportImages.map((url) => renderReportImage(url)).join("")}
+              </div>
+            ` : ""}
           <div class="report-faults">${(r.faults || []).map(f => `<span>${f}</span>`).join("")}</div>
           <button class="done-btn" data-path="${r.docPath || ""}" data-action="${resolved ? "undo" : "resolve"}">
             ${resolved ? "Undo Resolve" : "Mark Resolved"}

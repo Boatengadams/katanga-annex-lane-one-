@@ -6,26 +6,28 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function userDoc() {
+    function myUser() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid));
     }
 
-    function userExists() {
-      return isSignedIn() && userDoc().exists();
+    function myUserData() {
+      return isSignedIn() && myUser().exists() ? myUser().data : null;
     }
 
-    function userRole() {
-      return userExists() ? userDoc().data.role : null;
+    function myRole() {
+      return myUserData() != null && myUserData().role is string
+        ? myUserData().role.lower()
+        : "";
     }
 
-    function roleText() {
-      return userRole() is string ? userRole() : "";
+    function hasAdminRole() {
+      return myRole().matches('^\\s*(admin|administrator|super[ _]?admin)\\s*$');
     }
 
-    function isSuperAdmin() {
-      return isSignedIn() && (
-        request.auth.token.superAdmin == true ||
-        roleText().matches("(?i)^\\s*super[ _]?admin\\s*$")
+    function hasAdminFlag() {
+      return myUserData() != null && (
+        myUserData().isAdmin == true ||
+        myUserData().isSuperAdmin == true
       );
     }
 
@@ -33,40 +35,16 @@ service cloud.firestore {
       return isSignedIn() && (
         request.auth.token.admin == true ||
         request.auth.token.superAdmin == true ||
-        isSuperAdmin() ||
-        roleText().matches("(?i)^\\s*admin(istrator)?\\s*$")
+        hasAdminFlag() ||
+        hasAdminRole()
       );
-    }
-
-    function isApprovedUser() {
-      return userExists() && userDoc().data.approved == true;
     }
 
     match /users/{uid} {
-      allow create: if isSignedIn()
-        && request.auth.uid == uid
-        && request.resource.data.role == "student"
-        && request.resource.data.approved == false
-        && request.resource.data.room is string
-        && request.resource.data.room.size() > 0;
-
-      allow read: if isAdmin() || (isSignedIn() && request.auth.uid == uid);
-
-      allow update: if isSignedIn() && (
-        isSuperAdmin() ||
-        (
-          isAdmin() && !isSuperAdmin() &&
-          request.resource.data.role == resource.data.role
-        ) ||
-        (
-          request.auth.uid == uid &&
-          request.resource.data.role == resource.data.role &&
-          request.resource.data.room == resource.data.room &&
-          request.resource.data.approved == resource.data.approved
-        )
-      );
-
-      allow delete: if isSuperAdmin();
+      allow create: if isSignedIn() && request.auth.uid == uid;
+      allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin());
+      allow update: if isSignedIn() && (request.auth.uid == uid || isAdmin());
+      allow delete: if isAdmin();
     }
 
     match /faults/{faultId} {
@@ -78,39 +56,30 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow create, update, delete: if isAdmin();
 
-      match /reports/{reportId} {
-        allow create: if isApprovedUser() && request.resource.data.createdBy == request.auth.uid;
-        allow read: if isAdmin() || (isApprovedUser() && resource.data.createdBy == request.auth.uid);
-        allow update: if isAdmin() || (isApprovedUser() && resource.data.createdBy == request.auth.uid);
-        allow delete: if isAdmin();
-      }
-
       match /students/{studentUid} {
-        allow read: if isAdmin() || (isApprovedUser() && request.auth.uid == studentUid);
+        allow read: if isSignedIn();
         allow create, update, delete: if isAdmin();
 
         match /reports/{reportId} {
-          allow create: if isApprovedUser()
-            && request.auth.uid == studentUid
-            && request.resource.data.createdBy == request.auth.uid;
-
-          allow read: if isAdmin() || (isApprovedUser() && request.auth.uid == studentUid);
-
-          allow update: if isAdmin() || (
-            isApprovedUser() &&
-            request.auth.uid == studentUid &&
-            resource.data.createdBy == request.auth.uid
-          );
-
+          allow create: if isSignedIn() && request.auth.uid == studentUid;
+          allow read: if isSignedIn();
+          allow update: if isSignedIn() && (request.auth.uid == studentUid || isAdmin());
           allow delete: if isAdmin();
         }
       }
     }
 
+    match /{path=**}/reports/{reportId} {
+      allow create: if isSignedIn();
+      allow read: if isSignedIn();
+      allow update: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
     match /reports/{reportId} {
-      allow create: if isApprovedUser() && request.resource.data.createdBy == request.auth.uid;
-      allow read: if isAdmin() || (isApprovedUser() && resource.data.createdBy == request.auth.uid);
-      allow update: if isAdmin() || (isApprovedUser() && resource.data.createdBy == request.auth.uid);
+      allow create: if isSignedIn();
+      allow read: if isSignedIn();
+      allow update: if isSignedIn();
       allow delete: if isAdmin();
     }
 

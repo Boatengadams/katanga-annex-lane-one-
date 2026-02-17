@@ -72,6 +72,20 @@ const getReportImages = (report) => {
   return [];
 };
 
+const escapeAttr = (value) => String(value || "").replace(/"/g, "&quot;");
+
+const renderReportImage = (url) => `
+  <a class="report-image-link" href="${escapeAttr(url)}" target="_blank" rel="noopener noreferrer">
+    <img
+      src="${escapeAttr(url)}"
+      alt="Fault evidence image"
+      loading="lazy"
+      decoding="async"
+      onerror="this.classList.add('is-broken');const link=this.closest('a');if(link){link.classList.add('is-broken');link.setAttribute('aria-label','Image unavailable');}this.removeAttribute('src');"
+    >
+  </a>
+`;
+
 const mapReportDoc = (docSnap) => ({
   id: docSnap.id,
   docPath: docSnap.ref.path,
@@ -188,7 +202,7 @@ const renderRooms = () => {
             </button>
             ${reportImages.length ? `
               <div class="report-images">
-                ${reportImages.map((url) => `<a href="${url}" target="_blank" rel="noopener noreferrer"><img src="${url}" alt="Fault evidence image"></a>`).join("")}
+                ${reportImages.map((url) => renderReportImage(url)).join("")}
               </div>
             ` : ""}
             <hr class="report-sep">

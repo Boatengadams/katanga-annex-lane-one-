@@ -1530,18 +1530,48 @@ span {
 }
 
 .report-images a {
-  display: block;
+  position: relative;
+  display: grid;
+  place-items: center;
   border-radius: 10px;
   overflow: hidden;
   border: 1px solid rgba(148, 163, 184, 0.35);
-  background: #fff;
+  background: linear-gradient(145deg, #fff7df, #ffe9a8);
+  aspect-ratio: 1 / 1;
+  min-height: 90px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.report-images a::before {
+  content: "!";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 2rem;
+  font-weight: 800;
+  color: rgba(124, 58, 0, 0.6);
+  background:
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.55), transparent 45%),
+    linear-gradient(145deg, #ffe59b, #f7bf4d);
+  opacity: 0;
+  transition: opacity 0.2s ease;
 }
 
 .report-images img {
   width: 100%;
-  height: 90px;
+  height: 100%;
   object-fit: cover;
   display: block;
+  transition: opacity 0.2s ease;
+}
+
+.report-images a.is-broken::before {
+  opacity: 1;
+}
+
+.report-images img.is-broken {
+  opacity: 0;
 }
 
 .report-sep {
