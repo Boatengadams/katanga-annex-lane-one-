@@ -1188,6 +1188,24 @@ span {
   transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
 }
 
+.katanga-page:not(.admin-page) .fault-card::after {
+  content: "";
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  background: rgba(255, 255, 255, 0.9);
+  color: #1f2937;
+  display: grid;
+  place-items: center;
+  font-size: 0.82rem;
+  font-weight: 900;
+  opacity: 0.72;
+}
+
 .katanga-page:not(.admin-page) .fault-card:hover {
   transform: translateY(-2px);
   border-color: rgba(214, 165, 20, 0.72);
@@ -1203,6 +1221,15 @@ span {
   box-shadow:
     0 16px 32px rgba(153, 111, 9, 0.28),
     0 0 0 3px rgba(255, 207, 77, 0.36);
+}
+
+.katanga-page:not(.admin-page) .fault-card:has(input:checked)::after {
+  content: "✓";
+  border-color: rgba(161, 98, 7, 0.55);
+  background: linear-gradient(135deg, #ffe58f, #f7c948);
+  color: #5b3b00;
+  opacity: 1;
+  box-shadow: 0 8px 14px rgba(120, 87, 8, 0.28);
 }
 
 .katanga-page:not(.admin-page) .fault-card > span {
@@ -2180,4 +2207,97 @@ span {
     background-size: 78vmin;
     opacity: 0.1;
   }
+}
+
+/* =====================
+   Student Portal Theme
+===================== */
+.student-portal-page .student-portal-container {
+  max-width: 1120px;
+}
+
+.student-portal-page .card {
+  position: relative;
+  background: linear-gradient(135deg, rgba(19, 28, 45, 0.72), rgba(10, 15, 28, 0.64));
+  border: 1px solid rgba(255, 208, 74, 0.35);
+  border-radius: 26px;
+  padding: 34px 28px;
+  box-shadow: 0 28px 90px rgba(3, 8, 20, 0.5);
+  backdrop-filter: blur(14px) saturate(130%);
+  color: #f8fafc;
+  animation: none;
+}
+
+.student-portal-page .card::before {
+  display: none;
+}
+
+.student-portal-page .card::after {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 208, 74, 0.22);
+  pointer-events: none;
+}
+
+.student-portal-page .card:hover {
+  transform: none;
+  box-shadow: 0 28px 90px rgba(3, 8, 20, 0.5);
+}
+
+.student-portal-page .card .tag {
+  background: rgba(255, 204, 51, 0.2);
+  color: #ffd75f;
+}
+
+.student-portal-page .card h1,
+.student-portal-page .card .subtitle,
+.student-portal-page .card label,
+.student-portal-page .card .report-meta,
+.student-portal-page .card .report-meta strong,
+.student-portal-page .card .report-head strong {
+  color: #f8fafc;
+}
+
+.student-portal-page .card h1::after {
+  background: linear-gradient(90deg, rgba(255, 216, 107, 0.82), rgba(255, 216, 107, 0.18));
+}
+
+.student-portal-page .card .subtitle {
+  border-left-color: rgba(255, 204, 51, 0.45);
+}
+
+.student-portal-page .card input[type="text"],
+.student-portal-page .card select,
+.student-portal-page .card input[type="file"] {
+  background: rgba(255, 255, 255, 0.94);
+  color: #1f2937;
+}
+
+.student-portal-page .card .report-card {
+  background:
+    linear-gradient(155deg, rgba(10, 20, 38, 0.42), rgba(20, 35, 62, 0.28)),
+    radial-gradient(circle at top right, rgba(241, 194, 50, 0.14), transparent 48%);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  box-shadow:
+    0 10px 26px rgba(5, 10, 20, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.student-portal-page .card .report-faults span {
+  background: rgba(255, 204, 51, 0.18);
+  color: #ffe8a5;
+}
+
+.student-portal-page .submit-btn,
+.student-portal-page .toggle-reports-btn {
+  border: 1px solid rgba(124, 94, 0, 0.42);
+  background: linear-gradient(135deg, rgba(245, 225, 150, 0.96), rgba(241, 194, 50, 0.96));
+  color: #1d1d1d;
+}
+
+.student-portal-page .toggle-reports-btn:hover,
+.student-portal-page .submit-btn:hover {
+  box-shadow: 0 10px 20px rgba(184, 134, 0, 0.32);
 }
