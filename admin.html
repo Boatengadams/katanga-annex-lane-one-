@@ -36,6 +36,7 @@
         Pending Users
         <span class="nav-badge hidden" id="pendingCountBadge">0</span>
       </button>
+      <button class="drawer-link" data-target="allUsers">All Users</button>
       <button class="drawer-link" data-target="adminTools">Admin Tools</button>
       <button class="drawer-link logout-link" id="adminLogoutBtn">Logout</button>
     </nav>
@@ -184,6 +185,83 @@
           <canvas id="hallFaultRankingChart" height="180"></canvas>
         </div>
       </div>
+    </div>
+
+    <div class="card card-hero admin-panel hidden" id="allUsersSection">
+      <div class="card-head">
+        <div>
+          <p class="tag">Hall Users</p>
+          <h1>ALL USERS</h1>
+          <p class="subtitle">Group and sort users by role, block, lane, and room.</p>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div>
+          <label for="userSearchInput">Search (Name / Email / ID)</label>
+          <input type="text" id="userSearchInput" placeholder="Search users...">
+        </div>
+        <div>
+          <label for="userGroupBy">Group By</label>
+          <select id="userGroupBy">
+            <option value="role">Role</option>
+            <option value="block">Block</option>
+            <option value="lane">Lane / Subdivision</option>
+            <option value="room">Room</option>
+          </select>
+        </div>
+        <div>
+          <label for="userSortBy">Sort</label>
+          <select id="userSortBy">
+            <option value="name">Name (A-Z)</option>
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="role">Role</option>
+          </select>
+        </div>
+        <div>
+          <label for="userRoleFilter">Role Filter</label>
+          <select id="userRoleFilter">
+            <option value="all">All Roles</option>
+          </select>
+        </div>
+        <div>
+          <label for="userBlockFilter">Block Filter</label>
+          <select id="userBlockFilter">
+            <option value="all">All Blocks</option>
+            <option value="annex">Annex</option>
+            <option value="east-wing">East Wing</option>
+            <option value="west-wing">West Wing</option>
+            <option value="bridge">Bridge</option>
+          </select>
+        </div>
+        <div>
+          <label for="userLaneFilter">Lane / Subdivision Filter</label>
+          <select id="userLaneFilter">
+            <option value="all">All Lanes</option>
+          </select>
+        </div>
+        <div>
+          <label for="userRoomFilter">Room Filter</label>
+          <select id="userRoomFilter">
+            <option value="all">All Rooms</option>
+          </select>
+        </div>
+        <div>
+          <label for="userApprovalFilter">Approval Filter</label>
+          <select id="userApprovalFilter">
+            <option value="all">All Users</option>
+            <option value="pending">Pending Only</option>
+            <option value="approved">Approved Only</option>
+          </select>
+        </div>
+      </div>
+      <div class="notification-actions">
+        <button class="toggle-reports-btn" id="exportUsersCsvBtn" type="button">Export Filtered CSV</button>
+      </div>
+
+      <div class="analytics-grid" id="allUsersSummary"></div>
+      <div id="allUsersGroups" class="reports-list"></div>
     </div>
 
     <div class="card card-hero admin-panel hidden" id="adminTools">

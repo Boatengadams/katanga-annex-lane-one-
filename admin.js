@@ -6,7 +6,6 @@ import {
   getDoc,
   onSnapshot,
   query,
-  where,
   orderBy,
   limit,
   updateDoc,
@@ -46,6 +45,8 @@ let chartInstance = null;
 let hallRoomChartInstance = null;
 let hallFaultChartInstance = null;
 let refreshUiScheduled = false;
+let allUsersCache = [];
+let usersUnsub = null;
 const REPORT_STREAM_LIMIT = 220;
 const READ_NOTIFICATIONS_KEY = "adminReadNotifications";
 
@@ -91,6 +92,17 @@ const markNotificationsReadBtn = document.getElementById("markNotificationsReadB
 const resetNotificationsBtn = document.getElementById("resetNotificationsBtn");
 const pendingCountBadge = document.getElementById("pendingCountBadge");
 const liveAlert = document.getElementById("liveAlert");
+const userGroupBy = document.getElementById("userGroupBy");
+const userSortBy = document.getElementById("userSortBy");
+const userSearchInput = document.getElementById("userSearchInput");
+const userRoleFilter = document.getElementById("userRoleFilter");
+const userBlockFilter = document.getElementById("userBlockFilter");
+const userLaneFilter = document.getElementById("userLaneFilter");
+const userRoomFilter = document.getElementById("userRoomFilter");
+const userApprovalFilter = document.getElementById("userApprovalFilter");
+const exportUsersCsvBtn = document.getElementById("exportUsersCsvBtn");
+const allUsersSummary = document.getElementById("allUsersSummary");
+const allUsersGroups = document.getElementById("allUsersGroups");
 
 const defaultFaults = [
   { label: "Faulty Bulb", icon: "bulb" },
@@ -116,6 +128,100 @@ const normalizeRoomName = (value) => {
   const withoutPrefix = raw.replace(/^room[\s:-]*/i, "").trim();
   if (!withoutPrefix) return "";
   return `Room ${withoutPrefix.toUpperCase()}`;
+};
+
+const toTitle = (value) => String(value || "")
+  .trim()
+  .toLowerCase()
+  .replace(/\b\w/g, (ch) => ch.toUpperCase());
+
+const normalizeRoleLabel = (user) => {
+  const role = String(user?.role || "").trim().toLowerCase();
+  if (role === "maintenance_technician") {
+    const type = String(user?.maintenanceType || "").trim();
+    return type ? `Maintenance (${toTitle(type)})` : "Maintenance";
+  }
+  if (role === "staff") {
+    const rank = String(user?.staffRank || "").trim().toUpperCase();
+    return rank ? `Staff (${rank})` : "Staff";
+  }
+  if (role === "student") return "Student";
+  if (role === "admin" || role === "administrator" || role === "super_admin" || role === "super admin" || role === "superadmin") {
+    return "Admin";
+  }
+  return role ? toTitle(role) : "Unknown";
+};
+
+const normalizeBlockLabel = (value) => {
+  const block = String(value || "").trim().toLowerCase();
+  if (block === "annex") return "Annex";
+  if (block === "east-wing") return "East Wing";
+  if (block === "west-wing") return "West Wing";
+  if (block === "bridge") return "Bridge";
+  return "Unassigned";
+};
+
+const inferBlockFromText = (text) => {
+  const value = String(text || "").trim().toLowerCase();
+  if (!value) return "";
+  if (value.includes("annex")) return "annex";
+  if (value.includes("east wing")) return "east-wing";
+  if (value.includes("west wing")) return "west-wing";
+  if (value.includes("bridge")) return "bridge";
+  return "";
+};
+
+const inferLaneFromText = (text, blockKey = "") => {
+  const value = String(text || "").trim().toLowerCase();
+  if (!value) return "";
+  if (blockKey === "bridge") {
+    if (value.includes("upper")) return "Upper Bridge";
+    if (value.includes("lower")) return "Lower Bridge";
+  }
+  if (value.includes("ground floor")) return "Ground Floor";
+  const laneMatch = value.match(/lane\s*(\d+)/);
+  if (laneMatch) return `Lane ${laneMatch[1]}`;
+  return "";
+};
+
+const normalizeLaneLabel = (value, blockKey = "") => {
+  const lane = String(value || "").trim().toLowerCase();
+  if (!lane) return "";
+  if (lane === "ground-floor") return "Ground Floor";
+  if (lane === "upper") return "Upper Bridge";
+  if (lane === "lower") return "Lower Bridge";
+  const laneMatch = lane.match(/^lane-(\d+)$/);
+  if (laneMatch) return `Lane ${laneMatch[1]}`;
+  if (blockKey === "bridge" && (lane === "upper bridge" || lane === "lower bridge")) return toTitle(lane);
+  return toTitle(lane.replace(/-/g, " "));
+};
+
+const normalizeUserRow = (row = {}) => {
+  const blockKey = String(row.area || "").trim().toLowerCase() || inferBlockFromText(row.locationText || "");
+  const blockLabel = normalizeBlockLabel(blockKey);
+  const laneLabel = normalizeLaneLabel(row.subdivision, blockKey)
+    || String(row.subdivisionLabel || "").trim()
+    || inferLaneFromText(row.locationText || "", blockKey)
+    || "Unassigned";
+  const roomLabel = normalizeRoomName(row.room) || "Unassigned";
+  return {
+    id: row.id || "",
+    name: row.name || "Unknown",
+    email: row.email || row.login || "-",
+    role: row.role || "",
+    roleLabel: normalizeRoleLabel(row),
+    blockKey: blockKey || "unassigned",
+    blockLabel,
+    laneLabel,
+    roomLabel,
+    studentId: row.studentId || row.idNumber || "-",
+    program: row.program || "",
+    maintenanceLabel: row.maintenanceLabel || row.maintenanceType || "",
+    staffRank: row.staffRank || "",
+    approved: row.approved === true,
+    createdAt: row.createdAt || null,
+    raw: row
+  };
 };
 
 const buildFaultCatalog = (items = []) => {
@@ -924,13 +1030,251 @@ const initFaultInteractions = () => {
   }
 };
 
+const getFilteredUsers = () => {
+  const searchValue = String(userSearchInput?.value || "").trim().toLowerCase();
+  const roleValue = userRoleFilter?.value || "all";
+  const blockValue = userBlockFilter?.value || "all";
+  const laneValue = userLaneFilter?.value || "all";
+  const roomValue = userRoomFilter?.value || "all";
+  const approvalValue = userApprovalFilter?.value || "all";
+
+  return allUsersCache.filter((user) => {
+    if (roleValue !== "all" && user.roleLabel !== roleValue) return false;
+    if (blockValue !== "all" && user.blockKey !== blockValue) return false;
+    if (laneValue !== "all" && user.laneLabel !== laneValue) return false;
+    if (roomValue !== "all" && user.roomLabel !== roomValue) return false;
+    if (approvalValue === "pending" && user.approved) return false;
+    if (approvalValue === "approved" && !user.approved) return false;
+    if (searchValue) {
+      const haystack = [
+        user.name,
+        user.email,
+        user.studentId,
+        user.roleLabel,
+        user.blockLabel,
+        user.laneLabel,
+        user.roomLabel
+      ].join(" ").toLowerCase();
+      if (!haystack.includes(searchValue)) return false;
+    }
+    return true;
+  });
+};
+
+const sortUsers = (rows = []) => {
+  const mode = userSortBy?.value || "name";
+  const list = [...rows];
+  if (mode === "newest") {
+    list.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    return list;
+  }
+  if (mode === "oldest") {
+    list.sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
+    return list;
+  }
+  if (mode === "role") {
+    list.sort((a, b) => a.roleLabel.localeCompare(b.roleLabel) || a.name.localeCompare(b.name));
+    return list;
+  }
+  list.sort((a, b) => a.name.localeCompare(b.name));
+  return list;
+};
+
+const groupUsers = (rows = []) => {
+  const groupBy = userGroupBy?.value || "role";
+  const groups = new Map();
+  rows.forEach((user) => {
+    let key = "Ungrouped";
+    if (groupBy === "role") key = user.roleLabel;
+    if (groupBy === "block") key = user.blockLabel;
+    if (groupBy === "lane") key = user.laneLabel;
+    if (groupBy === "room") key = user.roomLabel;
+    const list = groups.get(key) || [];
+    list.push(user);
+    groups.set(key, list);
+  });
+  return Array.from(groups.entries())
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([label, users]) => ({ label, users: sortUsers(users) }));
+};
+
+const renderUsersSummary = (rows = []) => {
+  if (!allUsersSummary) return;
+  if (!rows.length) {
+    allUsersSummary.innerHTML = "<p>No users found.</p>";
+    return;
+  }
+
+  const approvedCount = rows.filter((user) => user.approved).length;
+  const pendingCount = rows.length - approvedCount;
+  const roleCount = new Map();
+  rows.forEach((user) => {
+    roleCount.set(user.roleLabel, (roleCount.get(user.roleLabel) || 0) + 1);
+  });
+  const topRole = Array.from(roleCount.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] || "-";
+
+  allUsersSummary.innerHTML = `
+    <div class="hall-kpi-card"><p>Total Users</p><h3>${rows.length}</h3></div>
+    <div class="hall-kpi-card"><p>Approved</p><h3>${approvedCount}</h3></div>
+    <div class="hall-kpi-card"><p>Pending</p><h3>${pendingCount}</h3></div>
+    <div class="hall-kpi-card"><p>Largest Role Group</p><h3>${topRole}</h3></div>
+  `;
+};
+
+const updateFilterOptions = () => {
+  if (!userRoleFilter || !userLaneFilter || !userRoomFilter) return;
+  const currentRole = userRoleFilter.value || "all";
+  const currentLane = userLaneFilter.value || "all";
+  const currentRoom = userRoomFilter.value || "all";
+  const blockValue = userBlockFilter?.value || "all";
+
+  const roleOptions = Array.from(new Set(allUsersCache.map((user) => user.roleLabel))).sort((a, b) => a.localeCompare(b));
+  userRoleFilter.innerHTML = `<option value="all">All Roles</option>${roleOptions.map((role) => `<option value="${escapeAttr(role)}">${role}</option>`).join("")}`;
+  userRoleFilter.value = roleOptions.includes(currentRole) ? currentRole : "all";
+
+  const rowsForLane = allUsersCache
+    .filter((user) => (userRoleFilter.value === "all" ? true : user.roleLabel === userRoleFilter.value))
+    .filter((user) => (blockValue === "all" ? true : user.blockKey === blockValue));
+  const laneOptions = Array.from(new Set(rowsForLane.map((user) => user.laneLabel))).sort((a, b) => a.localeCompare(b));
+  userLaneFilter.innerHTML = `<option value="all">All Lanes</option>${laneOptions.map((lane) => `<option value="${escapeAttr(lane)}">${lane}</option>`).join("")}`;
+  userLaneFilter.value = laneOptions.includes(currentLane) ? currentLane : "all";
+
+  const rowsForRoom = rowsForLane
+    .filter((user) => (userLaneFilter.value === "all" ? true : user.laneLabel === userLaneFilter.value));
+  const roomOptions = Array.from(new Set(rowsForRoom.map((user) => user.roomLabel))).sort((a, b) => a.localeCompare(b));
+  userRoomFilter.innerHTML = `<option value="all">All Rooms</option>${roomOptions.map((room) => `<option value="${escapeAttr(room)}">${room}</option>`).join("")}`;
+  userRoomFilter.value = roomOptions.includes(currentRoom) ? currentRoom : "all";
+};
+
+const renderAllUsers = () => {
+  if (!allUsersGroups) return;
+  const rows = getFilteredUsers();
+  renderUsersSummary(rows);
+  if (!rows.length) {
+    allUsersGroups.innerHTML = "<p>No users match the selected filters.</p>";
+    return;
+  }
+
+  const groups = groupUsers(rows);
+  allUsersGroups.innerHTML = groups.map((group) => `
+    <div class="report-block">
+      <div class="card-head">
+        <div>
+          <p class="tag">Group</p>
+          <h1>${group.label}</h1>
+          <p class="subtitle">${group.users.length} user(s)</p>
+        </div>
+      </div>
+      <div class="reports-list">
+        ${group.users.map((user) => `
+          <div class="report-card">
+            <div class="report-head">
+              <strong>${user.name}</strong>
+              <span class="status ${user.approved ? "resolved" : "pending"}">${user.approved ? "approved" : "pending"}</span>
+            </div>
+            <div class="report-meta">
+              <div><strong>Role:</strong> ${user.roleLabel}</div>
+              <div><strong>Email:</strong> ${user.email}</div>
+              <div><strong>ID:</strong> ${user.studentId}</div>
+              <div><strong>Block:</strong> ${user.blockLabel}</div>
+              <div><strong>Lane:</strong> ${user.laneLabel}</div>
+              <div><strong>Room:</strong> ${user.roomLabel}</div>
+              <div><strong>Program/Task:</strong> ${user.program || user.maintenanceLabel || user.staffRank || "-"}</div>
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `).join("");
+};
+
+const toCsvCell = (value) => {
+  const text = String(value ?? "");
+  const escaped = text.replace(/"/g, "\"\"");
+  return `"${escaped}"`;
+};
+
+const exportFilteredUsersToCsv = () => {
+  const rows = sortUsers(getFilteredUsers());
+  if (!rows.length) {
+    alert("No users match the selected filters.");
+    return;
+  }
+  const headers = [
+    "Name",
+    "Email",
+    "ID",
+    "Role",
+    "Block",
+    "Lane",
+    "Room",
+    "Program_or_Task",
+    "Approved",
+    "CreatedAt"
+  ];
+  const lines = [
+    headers.map(toCsvCell).join(","),
+    ...rows.map((user) => [
+      user.name,
+      user.email,
+      user.studentId,
+      user.roleLabel,
+      user.blockLabel,
+      user.laneLabel,
+      user.roomLabel,
+      user.program || user.maintenanceLabel || user.staffRank || "-",
+      user.approved ? "true" : "false",
+      user.createdAt?.toDate ? user.createdAt.toDate().toISOString() : ""
+    ].map(toCsvCell).join(","))
+  ];
+  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+  link.href = url;
+  link.download = `hall-users-${stamp}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+};
+
+const initAllUsers = () => {
+  if (!allUsersGroups) return;
+
+  const rerender = () => {
+    updateFilterOptions();
+    renderAllUsers();
+  };
+
+  [userGroupBy, userSortBy, userSearchInput, userRoleFilter, userBlockFilter, userLaneFilter, userRoomFilter, userApprovalFilter]
+    .forEach((el) => {
+      if (!el) return;
+      const eventName = el === userSearchInput ? "input" : "change";
+      el.addEventListener(eventName, rerender);
+    });
+  if (exportUsersCsvBtn) {
+    exportUsersCsvBtn.addEventListener("click", exportFilteredUsersToCsv);
+  }
+
+  if (usersUnsub) usersUnsub();
+  usersUnsub = onSnapshot(usersRef, (snapshot) => {
+    allUsersCache = snapshot.docs.map((d) => normalizeUserRow({ id: d.id, ...d.data() }));
+    rerender();
+  }, (err) => {
+    allUsersGroups.innerHTML = `<p>Failed to load users: ${err?.message || "permission denied"}.</p>`;
+  });
+};
+
 const initPendingUsers = () => {
   if (!pendingUsersDiv) return;
-  const q = query(usersRef, where("approved", "==", false));
   onSnapshot(
-    q,
+    usersRef,
     (snapshot) => {
-      const users = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      const users = snapshot.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter((u) => u.approved !== true)
+        .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
       if (pendingCountBadge) {
         pendingCountBadge.textContent = String(users.length);
         pendingCountBadge.classList.toggle("hidden", users.length === 0);
@@ -1142,6 +1486,7 @@ const initListeners = () => {
   const refreshAdminViews = () => {
     renderFaultItems();
     renderHallRankings();
+    renderAllUsers();
     updateLiveAlert();
     if (selectedFaultId) {
       faultReports = getReportsForFault(selectedFaultId);
@@ -1210,6 +1555,7 @@ const initAdmin = () => {
   initFaultInteractions();
   initNotificationActions();
   initPendingUsers();
+  initAllUsers();
   initAdminTools();
   initLogout();
   initListeners();
