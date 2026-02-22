@@ -18,6 +18,7 @@ const signupTab = document.getElementById("signupTab");
 const signupFields = document.getElementById("signupFields");
 const authSubmit = document.getElementById("authSubmit");
 const authMessage = document.getElementById("authMessage");
+const authToast = document.getElementById("authToast");
 const email = document.getElementById("email");
 const password = document.getElementById("password");
 const passwordToggle = document.getElementById("passwordToggle");
@@ -38,6 +39,9 @@ const locationSubdivisionWrap = document.getElementById("locationSubdivisionWrap
 const programWrap = document.getElementById("programWrap");
 
 let mode = "login";
+let toastTimer = null;
+let submitBusyStartedAt = 0;
+const MIN_SUBMIT_BUSY_MS = 850;
 const studentEmailRegex = /^[A-Za-z0-9._%+-]+@st\.knust\.edu\.gh$/;
 const studentEmailPattern = "^[A-Za-z0-9._%+-]+@st\\.knust\\.edu\\.gh$";
 
@@ -113,6 +117,41 @@ const isRateLimited = () => {
   recent.push(now);
   sessionStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(recent));
   return recent.length > limit;
+};
+
+const showAuthToast = (message) => {
+  if (!authToast || !message) return;
+  authToast.textContent = message;
+  authToast.classList.add("is-visible");
+  if (toastTimer) {
+    clearTimeout(toastTimer);
+  }
+  toastTimer = window.setTimeout(() => {
+    authToast.classList.remove("is-visible");
+  }, 6500);
+};
+
+const setSubmitBusy = (busy) => {
+  if (!authSubmit) return;
+  if (loginTab) loginTab.disabled = busy;
+  if (signupTab) signupTab.disabled = busy;
+  if (passwordToggle) passwordToggle.disabled = busy;
+  authSubmit.disabled = busy;
+  if (!busy) {
+    authSubmit.value = mode === "signup" ? "Create Account" : "Login";
+    return;
+  }
+  submitBusyStartedAt = Date.now();
+  authSubmit.value = mode === "signup" ? "Creating account..." : "Logging in...";
+};
+
+const releaseSubmitBusy = async () => {
+  const elapsed = Date.now() - submitBusyStartedAt;
+  const remaining = MIN_SUBMIT_BUSY_MS - elapsed;
+  if (remaining > 0) {
+    await new Promise((resolve) => window.setTimeout(resolve, remaining));
+  }
+  setSubmitBusy(false);
 };
 
 const parseLaneNumber = (subdivisionKey) => {
@@ -234,7 +273,9 @@ const setMode = (next) => {
   if (authCard) authCard.classList.toggle("is-signup-mode", isSignup);
   loginTab.classList.toggle("is-active", !isSignup);
   signupTab.classList.toggle("is-active", isSignup);
-  authSubmit.value = isSignup ? "Create Account" : "Login";
+  if (!authSubmit.disabled) {
+    authSubmit.value = isSignup ? "Create Account" : "Login";
+  }
 
   if (email) {
     if (!isSignup) {
@@ -295,6 +336,7 @@ if (loginForm) {
       return;
     }
 
+    setSubmitBusy(true);
     try {
       const normalizedEmail = email.value.trim().toLowerCase();
       if (mode === "signup") {
@@ -367,8 +409,7 @@ if (loginForm) {
 
         await setDoc(doc(db, "users", cred.user.uid), profile, { merge: true });
 
-        authMessage.textContent = "Account created. Your account will be reviewed and confirmed shortly.";
-        authMessage.style.color = "#9ee6b8";
+        showAuthToast("Account created successfully. It is waiting for admin approval. Please wait for confirmation before login.");
         clearAuthForm();
         return;
       }
@@ -421,6 +462,8 @@ if (loginForm) {
         authMessage.textContent = err?.message || "Authentication failed.";
       }
       authMessage.style.color = "";
+    } finally {
+      await releaseSubmitBusy();
     }
   });
 }

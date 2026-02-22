@@ -854,6 +854,28 @@ span {
   justify-self: stretch;
 }
 
+.admin-page #allUsersSection {
+  grid-column: 1 / -1;
+  width: calc(100% + (var(--admin-main-pad) * 2));
+  margin-left: calc(var(--admin-main-pad) * -1);
+  margin-right: calc(var(--admin-main-pad) * -1);
+  justify-self: stretch;
+  min-height: calc(100vh - 170px);
+}
+
+.admin-page #allUsersSection .form-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.admin-page #allUsersSummary {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.admin-page #allUsersGroups {
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  align-items: start;
+}
+
 .admin-page .card-hero {
   backdrop-filter: blur(12px);
   border: 1px solid rgba(241, 194, 50, 0.28);
@@ -2036,6 +2058,30 @@ span {
   min-height: 1.2em;
 }
 
+.login-page .auth-toast {
+  position: fixed;
+  top: -100px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(92vw, 620px);
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: linear-gradient(135deg, rgba(24, 58, 34, 0.96), rgba(18, 44, 28, 0.96));
+  color: #d6ffe6;
+  font-weight: 700;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.45);
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: top 0.3s ease, opacity 0.3s ease;
+}
+
+.login-page .auth-toast.is-visible {
+  top: 16px;
+  opacity: 1;
+}
+
 .login-page #loginForm input[type="submit"] {
   margin-top: 8px;
   padding: 10px 16px;
@@ -2056,6 +2102,13 @@ span {
 
 .login-page #loginForm input[type="submit"]:active {
   transform: translateY(0);
+}
+
+.login-page #loginForm input[type="submit"]:disabled {
+  opacity: 0.8;
+  cursor: wait;
+  transform: none;
+  box-shadow: none;
 }
 
 @media (min-width: 900px) {

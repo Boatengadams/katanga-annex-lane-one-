@@ -92,6 +92,9 @@ const markNotificationsReadBtn = document.getElementById("markNotificationsReadB
 const resetNotificationsBtn = document.getElementById("resetNotificationsBtn");
 const pendingCountBadge = document.getElementById("pendingCountBadge");
 const liveAlert = document.getElementById("liveAlert");
+const selectAllPendingUsers = document.getElementById("selectAllPendingUsers");
+const approveSelectedUsersBtn = document.getElementById("approveSelectedUsersBtn");
+const pendingSelectionInfo = document.getElementById("pendingSelectionInfo");
 const userGroupBy = document.getElementById("userGroupBy");
 const userSortBy = document.getElementById("userSortBy");
 const userSearchInput = document.getElementById("userSearchInput");
@@ -103,6 +106,8 @@ const userApprovalFilter = document.getElementById("userApprovalFilter");
 const exportUsersCsvBtn = document.getElementById("exportUsersCsvBtn");
 const allUsersSummary = document.getElementById("allUsersSummary");
 const allUsersGroups = document.getElementById("allUsersGroups");
+let pendingUsersCache = [];
+const selectedPendingUserIds = new Set();
 
 const defaultFaults = [
   { label: "Faulty Bulb", icon: "bulb" },
@@ -222,6 +227,15 @@ const normalizeUserRow = (row = {}) => {
     createdAt: row.createdAt || null,
     raw: row
   };
+};
+
+const isPendingApproval = (user = {}) => {
+  const approvedValue = user?.approved;
+  const approvedNormalized = typeof approvedValue === "string"
+    ? approvedValue.trim().toLowerCase() === "true"
+    : approvedValue === true;
+  const statusNormalized = String(user?.status || "").trim().toLowerCase();
+  return !(approvedNormalized || statusNormalized === "approved");
 };
 
 const buildFaultCatalog = (items = []) => {
@@ -1268,40 +1282,125 @@ const initAllUsers = () => {
 
 const initPendingUsers = () => {
   if (!pendingUsersDiv) return;
+
+  const syncPendingSelectionUi = () => {
+    const total = pendingUsersCache.length;
+    const selectedCount = selectedPendingUserIds.size;
+    if (selectAllPendingUsers) {
+      selectAllPendingUsers.checked = total > 0 && selectedCount === total;
+      selectAllPendingUsers.indeterminate = selectedCount > 0 && selectedCount < total;
+      selectAllPendingUsers.disabled = total === 0;
+    }
+    if (approveSelectedUsersBtn) {
+      approveSelectedUsersBtn.disabled = selectedCount === 0;
+      approveSelectedUsersBtn.textContent = selectedCount > 0
+        ? `Approve Selected (${selectedCount})`
+        : "Approve Selected";
+    }
+    if (pendingSelectionInfo) {
+      pendingSelectionInfo.textContent = total > 0
+        ? `${selectedCount} selected out of ${total} pending user(s).`
+        : "No pending users available.";
+    }
+  };
+
+  const renderPendingUsers = (users = []) => {
+    pendingUsersCache = users;
+    const validIds = new Set(users.map((u) => u.id));
+    Array.from(selectedPendingUserIds).forEach((uid) => {
+      if (!validIds.has(uid)) {
+        selectedPendingUserIds.delete(uid);
+      }
+    });
+
+    if (pendingCountBadge) {
+      pendingCountBadge.textContent = String(users.length);
+      pendingCountBadge.classList.toggle("hidden", users.length === 0);
+    }
+    if (!users.length) {
+      pendingUsersDiv.innerHTML = "<p>No pending accounts.</p>";
+      syncPendingSelectionUi();
+      return;
+    }
+    const canApproveUsers = currentAdmin?.isAdmin === true;
+    pendingUsersDiv.innerHTML = users.map(u => `
+      <div class="report-card">
+        <div class="report-head">
+          <strong>${u.name || "User"}</strong>
+          <span class="status pending">pending</span>
+        </div>
+        <div class="report-meta">
+          <div><strong>Role:</strong> ${u.role || "-"}</div>
+          <div><strong>ID:</strong> ${u.studentId || u.idNumber || "-"}</div>
+          <div><strong>Email:</strong> ${u.email || u.login || "-"}</div>
+          <div><strong>Location:</strong> ${u.locationText || u.room || "-"}</div>
+          <div><strong>Extra:</strong> ${u.program || u.maintenanceLabel || u.staffRank || "-"}</div>
+        </div>
+        ${canApproveUsers
+          ? `
+            <div class="notification-actions">
+              <label>
+                <input type="checkbox" class="pending-user-check" data-uid="${u.id}" ${selectedPendingUserIds.has(u.id) ? "checked" : ""}>
+                Select
+              </label>
+              <button class="done-btn" data-uid="${u.id}">Approve</button>
+            </div>
+          `
+          : `<p class="auth-note">You do not have permission to approve users.</p>`}
+      </div>
+    `).join("");
+    syncPendingSelectionUi();
+  };
+
+  const approveUsersByIds = async (ids = []) => {
+    if (currentAdmin?.isAdmin !== true) {
+      alert("You do not have permission to approve users.");
+      return;
+    }
+    const uniqueIds = [...new Set(ids.filter(Boolean))];
+    if (!uniqueIds.length) return;
+    try {
+      if (approveSelectedUsersBtn) approveSelectedUsersBtn.disabled = true;
+      const writes = await Promise.allSettled(
+        uniqueIds.map((uid) => updateDoc(doc(usersRef, uid), {
+          approved: true,
+          approvedAt: serverTimestamp()
+        }))
+      );
+      let successCount = 0;
+      let failedCount = 0;
+      for (let i = 0; i < writes.length; i += 1) {
+        const result = writes[i];
+        const uid = uniqueIds[i];
+        if (result.status === "fulfilled") {
+          successCount += 1;
+          selectedPendingUserIds.delete(uid);
+          if (currentAdmin) {
+            await logAudit("user_approved", uid, currentAdmin);
+          }
+        } else {
+          failedCount += 1;
+        }
+      }
+      trackAdmin("user_approved_bulk", { count: successCount });
+      if (failedCount > 0) {
+        alert(`Approved ${successCount} user(s). ${failedCount} failed.`);
+      }
+    } catch (err) {
+      alert(err?.message || "Failed to approve selected users.");
+    } finally {
+      syncPendingSelectionUi();
+    }
+  };
+
   onSnapshot(
     usersRef,
     (snapshot) => {
       const users = snapshot.docs
         .map(d => ({ id: d.id, ...d.data() }))
-        .filter((u) => u.approved !== true)
+        .filter((u) => isPendingApproval(u))
         .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-      if (pendingCountBadge) {
-        pendingCountBadge.textContent = String(users.length);
-        pendingCountBadge.classList.toggle("hidden", users.length === 0);
-      }
-      if (!users.length) {
-        pendingUsersDiv.innerHTML = "<p>No pending accounts.</p>";
-        return;
-      }
-      const canApproveUsers = currentAdmin?.isAdmin === true;
-      pendingUsersDiv.innerHTML = users.map(u => `
-        <div class="report-card">
-          <div class="report-head">
-            <strong>${u.name || "User"}</strong>
-            <span class="status pending">pending</span>
-          </div>
-          <div class="report-meta">
-            <div><strong>Role:</strong> ${u.role || "-"}</div>
-            <div><strong>ID:</strong> ${u.studentId || u.idNumber || "-"}</div>
-            <div><strong>Email:</strong> ${u.email || u.login || "-"}</div>
-            <div><strong>Location:</strong> ${u.locationText || u.room || "-"}</div>
-            <div><strong>Extra:</strong> ${u.program || u.maintenanceLabel || u.staffRank || "-"}</div>
-          </div>
-          ${canApproveUsers
-            ? `<button class="done-btn" data-uid="${u.id}">Approve</button>`
-            : `<p class="auth-note">You do not have permission to approve users.</p>`}
-        </div>
-      `).join("");
+      renderPendingUsers(users);
     },
     (err) => {
       if (pendingCountBadge) {
@@ -1309,30 +1408,48 @@ const initPendingUsers = () => {
         pendingCountBadge.classList.add("hidden");
       }
       pendingUsersDiv.innerHTML = `<p>Failed to load pending users: ${err?.message || "permission denied"}.</p>`;
+      if (pendingSelectionInfo) {
+        pendingSelectionInfo.textContent = "Pending users unavailable.";
+      }
     }
   );
+
+  if (selectAllPendingUsers) {
+    selectAllPendingUsers.addEventListener("change", () => {
+      selectedPendingUserIds.clear();
+      if (selectAllPendingUsers.checked) {
+        pendingUsersCache.forEach((user) => selectedPendingUserIds.add(user.id));
+      }
+      renderPendingUsers(pendingUsersCache);
+    });
+  }
+
+  if (approveSelectedUsersBtn) {
+    approveSelectedUsersBtn.addEventListener("click", async () => {
+      const ids = Array.from(selectedPendingUserIds);
+      await approveUsersByIds(ids);
+    });
+  }
+
+  pendingUsersDiv.addEventListener("change", (e) => {
+    const check = e.target.closest(".pending-user-check");
+    if (!check) return;
+    const uid = check.dataset.uid;
+    if (!uid) return;
+    if (check.checked) {
+      selectedPendingUserIds.add(uid);
+    } else {
+      selectedPendingUserIds.delete(uid);
+    }
+    syncPendingSelectionUi();
+  });
 
   pendingUsersDiv.addEventListener("click", async (e) => {
     const btn = e.target.closest(".done-btn");
     if (!btn) return;
-    if (currentAdmin?.isAdmin !== true) {
-      alert("You do not have permission to approve users.");
-      return;
-    }
     const uid = btn.dataset.uid;
     if (!uid) return;
-    try {
-      await updateDoc(doc(usersRef, uid), {
-        approved: true,
-        approvedAt: serverTimestamp()
-      });
-      if (currentAdmin) {
-        await logAudit("user_approved", uid, currentAdmin);
-      }
-      trackAdmin("user_approved", { uid });
-    } catch (err) {
-      alert(err?.message || "Failed to approve user.");
-    }
+    await approveUsersByIds([uid]);
   });
 };
 

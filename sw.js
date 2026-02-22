@@ -1,4 +1,4 @@
-const STATIC_CACHE = "edutec-static-v3";
+const STATIC_CACHE = "edutec-static-v4";
 const SHELL_FILES = [
   "./",
   "./index.html",
@@ -60,6 +60,21 @@ self.addEventListener("fetch", (event) => {
 
   const cacheableDestinations = new Set(["script", "style", "image", "font", "document"]);
   if (!cacheableDestinations.has(request.destination)) return;
+
+  if (request.destination === "script" || request.destination === "style") {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const clone = response.clone();
+            caches.open(STATIC_CACHE).then((cache) => cache.put(request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(request))
+    );
+    return;
+  }
 
   event.respondWith(
     caches.match(request).then((cached) => {
