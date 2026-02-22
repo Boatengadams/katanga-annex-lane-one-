@@ -25,7 +25,7 @@
     </div>
 
     <div class="glass">
-      <h2 class="login-title">Student Access</h2>
+      <h2 class="login-title">Hall Access</h2>
 
       <div class="auth-toggle" role="tablist" aria-label="Authentication">
         <button class="auth-tab is-active" id="loginTab" type="button">Login</button>
@@ -42,23 +42,57 @@
                  title="Enter at least two names. Hyphens/apostrophes allowed (e.g., Boateng Adams, Osei-Annan, O'Connor).">
           </div>
           <div class="form-field">
-            <label>Student ID</label>
+            <label>Register As</label>
+            <select id="registerRole" name="registerRole">
+              <option value="student">Student</option>
+              <option value="maintenance_technician">Maintenance Technician</option>
+              <option value="staff">Staff</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label id="studentIdLabel">Student ID</label>
             <input type="text" id="studentId" name="studentId" placeholder="2500000001"
                  inputmode="numeric"
                  pattern="\d(?:[ -]?\d){9,}"
                  title="Student ID should be at least 10 digits. Spaces or hyphens are not allowed.">
           </div>
+          <div class="form-field" id="maintenanceTypeWrap">
+            <label>Maintenance Type</label>
+            <select id="maintenanceType" name="maintenanceType">
+              <option value="">-- Select Type --</option>
+              <option value="electrician">Electrician</option>
+              <option value="carpenter">Carpenter</option>
+              <option value="plumber">Plumber</option>
+            </select>
+          </div>
+          <div class="form-field" id="staffRankWrap">
+            <label>Staff Rank</label>
+            <select id="staffRank" name="staffRank">
+              <option value="">-- Select Rank --</option>
+              <option value="SCR">SCR</option>
+              <option value="JCR">JCR</option>
+              <option value="Porter">Porter</option>
+            </select>
+          </div>
+          <div class="form-field" id="locationAreaWrap">
+            <label>Area</label>
+            <select id="signupArea" name="signupArea">
+              <option value="">-- Select Area --</option>
+            </select>
+          </div>
+          <div class="form-field" id="locationSubdivisionWrap">
+            <label>Subdivision</label>
+            <select id="signupSubdivision" name="signupSubdivision">
+              <option value="">-- Select Subdivision --</option>
+            </select>
+          </div>
           <div class="form-field">
             <label>Room Number</label>
             <select id="signupRoom" name="signupRoom">
               <option value="">-- Select Room --</option>
-              <option>Room 1A</option><option>Room 2A</option><option>Room 3A</option>
-              <option>Room 4A</option><option>Room 5A</option><option>Room 6A</option>
-              <option>Room 7A</option><option>Room 8A</option><option>Room 9A</option>
-              <option>Room 10A</option><option>Room 11A</option><option>Room 12A</option>
             </select>
           </div>
-          <div class="form-field">
+          <div class="form-field" id="programWrap">
             <label>Program of Study</label>
             <input type="text" id="program" name="program" placeholder="Computer Science">
           </div>

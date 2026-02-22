@@ -943,14 +943,15 @@ const initPendingUsers = () => {
       pendingUsersDiv.innerHTML = users.map(u => `
         <div class="report-card">
           <div class="report-head">
-            <strong>${u.name || "Student"}</strong>
+            <strong>${u.name || "User"}</strong>
             <span class="status pending">pending</span>
           </div>
           <div class="report-meta">
-            <div><strong>ID:</strong> ${u.studentId || "-"}</div>
+            <div><strong>Role:</strong> ${u.role || "-"}</div>
+            <div><strong>ID:</strong> ${u.studentId || u.idNumber || "-"}</div>
             <div><strong>Email:</strong> ${u.email || u.login || "-"}</div>
-            <div><strong>Room:</strong> ${u.room || "-"}</div>
-            <div><strong>Program:</strong> ${u.program || "-"}</div>
+            <div><strong>Location:</strong> ${u.locationText || u.room || "-"}</div>
+            <div><strong>Extra:</strong> ${u.program || u.maintenanceLabel || u.staffRank || "-"}</div>
           </div>
           ${canApproveUsers
             ? `<button class="done-btn" data-uid="${u.id}">Approve</button>`
@@ -1235,9 +1236,10 @@ onAuthStateChanged(auth, async (user) => {
     roleValue === "admin" ||
     roleValue === "administrator" ||
     roleSuperAdmin;
+  const isScrStaff = roleValue === "staff" && String(data.staffRank || "").trim().toLowerCase() === "scr";
 
   const isSuperAdmin = claimsSuperAdmin || roleSuperAdmin;
-  const isAdmin = claimsAdmin || roleAdmin;
+  const isAdmin = claimsAdmin || roleAdmin || isScrStaff;
   if (!isAdmin) {
     await signOut(auth);
     goToLogin();
@@ -1248,7 +1250,7 @@ onAuthStateChanged(auth, async (user) => {
     uid: user.uid,
     email: user.email || "",
     ...data,
-    role: isSuperAdmin ? "superAdmin" : "admin",
+    role: isSuperAdmin ? "superAdmin" : (isScrStaff ? "scr" : "admin"),
     isAdmin: true,
     isSuperAdmin
   };

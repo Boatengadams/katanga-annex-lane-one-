@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maintenance Technician Portal</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" type="image/x-icon" href="Annex Katanga.ico">
+</head>
+<body class="katanga-page maintenance-page">
+<header class="page-header">
+  <img src="Images/katanga logo1.png" alt="Katanga Hall" class="logo">
+  <div class="header-text">
+    <p class="kicker">University Hall</p>
+    <h1>Maintenance Portal</h1>
+    <p class="header-subtitle" id="technicianSubtitle">Technician Dashboard</p>
+  </div>
+  <div class="student-header-actions">
+    <button class="toggle-reports-btn" id="maintenanceLogoutBtn" type="button">Logout</button>
+  </div>
+</header>
+
+<main class="container maintenance-container">
+  <div class="card card-hero">
+    <div class="card-head">
+      <div>
+        <p class="tag">Fault Scope</p>
+        <h1 id="technicianTypeHeading">MAINTENANCE TECHNICIAN</h1>
+        <p class="subtitle" id="faultScopeText">Loading your technician access...</p>
+      </div>
+    </div>
+    <p class="auth-note" id="maintenanceAuthMessage"></p>
+  </div>
+
+  <div class="card card-hero">
+    <div class="card-head">
+      <div>
+        <p class="tag">Areas</p>
+        <h1>ANNEX, EAST WING, WEST WING, BRIDGE</h1>
+        <p class="subtitle">Each area and subdivision shows the number of current faults.</p>
+      </div>
+    </div>
+    <div class="maintenance-tabs" id="areaTabs"></div>
+    <div class="maintenance-tabs maintenance-subtabs" id="subdivisionTabs"></div>
+    <div class="maintenance-rooms" id="roomList"></div>
+  </div>
+
+  <div class="card card-hero">
+    <div class="card-head">
+      <div>
+        <p class="tag">Requests</p>
+        <h1 id="activeLocationHeading">SELECT A LOCATION</h1>
+        <p class="subtitle">Only faults for your maintenance type are listed here.</p>
+      </div>
+    </div>
+    <div class="reports-list" id="maintenanceReports"></div>
+  </div>
+</main>
+
+<script src="sw-register.js" defer></script>
+<script type="module" src="maintenance.js"></script>
+</body>
+</html>

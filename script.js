@@ -19,6 +19,7 @@ const tiltCard = document.querySelector(".card");
 const studentName = document.getElementById("studentName");
 const studentId = document.getElementById("studentId");
 const studentLogin = document.getElementById("studentLogin");
+const studentLocation = document.getElementById("studentLocation");
 const studentReports = document.getElementById("studentReports");
 const toggleReportsBtn = document.getElementById("toggleReportsBtn");
 const studentLogoutBtn = document.getElementById("studentLogoutBtn");
@@ -40,6 +41,13 @@ const normalizeFaultType = (fault) => {
   if (!fault) return "";
   const parts = fault.split(" - ");
   return parts[0].trim();
+};
+
+const getRoleRedirect = (profile) => {
+  const role = String(profile?.role || "").trim().toLowerCase();
+  if (role === "maintenance_technician") return "maintenance.html";
+  if (role === "staff") return "staff.html";
+  return LOGIN_PAGE;
 };
 
 const toCompressedDataUrl = (file, maxSide = 800, quality = 0.5) => {
@@ -192,6 +200,11 @@ async function submitReport() {
 
   const report = {
     room: lockedRoom,
+    area: currentProfile?.area || "",
+    areaLabel: currentProfile?.areaLabel || "",
+    subdivision: currentProfile?.subdivision || "",
+    subdivisionLabel: currentProfile?.subdivisionLabel || "",
+    locationText: currentProfile?.locationText || "",
     faults,
     faultTypes,
     socketType: socketType ? socketType.value : "",
@@ -351,6 +364,11 @@ if (auth && (studentName || studentReports || room)) {
       const snap = await getDoc(doc(db, "users", user.uid));
       if (snap.exists()) {
         currentProfile = snap.data();
+        const roleValue = String(currentProfile?.role || "").trim().toLowerCase();
+        if (roleValue && roleValue !== "student") {
+          window.location.replace(getRoleRedirect(currentProfile));
+          return;
+        }
         if (studentName) {
           studentName.value = currentProfile.name || "";
           studentName.readOnly = true;
@@ -362,6 +380,13 @@ if (auth && (studentName || studentReports || room)) {
         if (studentLogin) {
           studentLogin.value = currentProfile.login || user.email || "";
           studentLogin.readOnly = true;
+        }
+        if (studentLocation) {
+          const area = currentProfile.areaLabel || "";
+          const subdivision = currentProfile.subdivisionLabel || "";
+          const assignedRoom = currentProfile.room || "";
+          studentLocation.value = currentProfile.locationText || [area, subdivision, assignedRoom].filter(Boolean).join(" ");
+          studentLocation.readOnly = true;
         }
         if (room) {
           room.value = currentProfile.room || "";
@@ -375,6 +400,9 @@ if (auth && (studentName || studentReports || room)) {
         if (studentLogin) {
           studentLogin.value = user.email || "";
           studentLogin.readOnly = true;
+        }
+        if (studentLocation) {
+          studentLocation.value = "";
         }
         if (room) room.disabled = false;
       }

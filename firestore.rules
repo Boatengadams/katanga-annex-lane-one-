@@ -31,12 +31,20 @@ service cloud.firestore {
       );
     }
 
+    function hasScrRole() {
+      return myUserData() != null &&
+        myRole() == "staff" &&
+        myUserData().staffRank is string &&
+        myUserData().staffRank.lower() == "scr";
+    }
+
     function isAdmin() {
       return isSignedIn() && (
         request.auth.token.admin == true ||
         request.auth.token.superAdmin == true ||
         hasAdminFlag() ||
-        hasAdminRole()
+        hasAdminRole() ||
+        hasScrRole()
       );
     }
 

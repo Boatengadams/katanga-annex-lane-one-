@@ -2373,3 +2373,67 @@ span {
 .student-portal-page .submit-btn:hover {
   box-shadow: 0 10px 20px rgba(184, 134, 0, 0.32);
 }
+
+/* =====================
+   Auth Role Controls
+===================== */
+#signupFields .hidden {
+  display: none;
+}
+
+/* =====================
+   Maintenance / Staff Portals
+===================== */
+.maintenance-container,
+.staff-container {
+  max-width: 1180px;
+}
+
+.maintenance-tabs,
+.maintenance-rooms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.maintenance-tab,
+.maintenance-room-chip {
+  border: 1px solid rgba(255, 208, 74, 0.45);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #152032;
+  font-weight: 700;
+  padding: 10px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.maintenance-subtab {
+  background: rgba(253, 247, 227, 0.96);
+}
+
+.maintenance-tab.is-active,
+.maintenance-room-chip.is-active {
+  border-color: #cf8f00;
+  box-shadow: 0 0 0 3px rgba(242, 194, 48, 0.25);
+}
+
+.fault-pill {
+  min-width: 28px;
+  border-radius: 999px;
+  text-align: center;
+  padding: 2px 8px;
+  font-size: 0.78rem;
+  background: #b91c1c;
+  color: #fff;
+}
+
+.fault-pill.is-zero {
+  background: #64748b;
+}
+
+.maintenance-page .card,
+.staff-page .card {
+  animation: none;
+}

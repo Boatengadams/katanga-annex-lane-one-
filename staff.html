@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Staff Portal</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" type="image/x-icon" href="Annex Katanga.ico">
+</head>
+<body class="katanga-page staff-page">
+<header class="page-header">
+  <img src="Images/katanga logo1.png" alt="Katanga Hall" class="logo">
+  <div class="header-text">
+    <p class="kicker">University Hall</p>
+    <h1>Staff Portal</h1>
+    <p class="header-subtitle">SCR, JCR, Porter Workspace</p>
+  </div>
+  <div class="student-header-actions">
+    <button class="toggle-reports-btn" id="staffLogoutBtn" type="button">Logout</button>
+  </div>
+</header>
+
+<main class="container staff-container">
+  <div class="card card-hero">
+    <div class="card-head">
+      <div>
+        <p class="tag">Profile</p>
+        <h1 id="staffRankHeading">STAFF</h1>
+        <p class="subtitle" id="staffSummaryText">Loading staff profile...</p>
+      </div>
+    </div>
+    <div class="report-meta">
+      <div><strong>Name:</strong> <span id="staffName">-</span></div>
+      <div><strong>Email:</strong> <span id="staffEmail">-</span></div>
+      <div><strong>Rank:</strong> <span id="staffRank">-</span></div>
+      <div><strong>Status:</strong> <span id="staffApprovalStatus">-</span></div>
+    </div>
+    <p class="auth-note" id="staffAuthMessage"></p>
+  </div>
+
+  <div class="card card-hero">
+    <div class="card-head">
+      <div>
+        <p class="tag">Tasks</p>
+        <h1>STAFF RESPONSIBILITIES</h1>
+        <p class="subtitle" id="staffTaskText">Task guidance is set by your rank and assignment.</p>
+      </div>
+    </div>
+    <div class="maintenance-rooms" id="staffActions"></div>
+  </div>
+</main>
+
+<script src="sw-register.js" defer></script>
+<script type="module" src="staff.js"></script>
+</body>
+</html>
