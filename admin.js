@@ -92,6 +92,7 @@ const markNotificationsReadBtn = document.getElementById("markNotificationsReadB
 const resetNotificationsBtn = document.getElementById("resetNotificationsBtn");
 const pendingCountBadge = document.getElementById("pendingCountBadge");
 const liveAlert = document.getElementById("liveAlert");
+const adminAccessStatus = document.getElementById("adminAccessStatus");
 const selectAllPendingUsers = document.getElementById("selectAllPendingUsers");
 const approveSelectedUsersBtn = document.getElementById("approveSelectedUsersBtn");
 const pendingSelectionInfo = document.getElementById("pendingSelectionInfo");
@@ -1369,6 +1370,7 @@ const initPendingUsers = () => {
       );
       let successCount = 0;
       let failedCount = 0;
+      const failMessages = [];
       for (let i = 0; i < writes.length; i += 1) {
         const result = writes[i];
         const uid = uniqueIds[i];
@@ -1380,11 +1382,16 @@ const initPendingUsers = () => {
           }
         } else {
           failedCount += 1;
+          const reason = result.reason;
+          failMessages.push(
+            `${uid}: ${reason?.code || "error"} ${reason?.message || ""}`.trim()
+          );
         }
       }
       trackAdmin("user_approved_bulk", { count: successCount });
       if (failedCount > 0) {
-        alert(`Approved ${successCount} user(s). ${failedCount} failed.`);
+        const preview = failMessages.slice(0, 2).join(" | ");
+        alert(`Approved ${successCount} user(s). ${failedCount} failed. ${preview}`);
       }
     } catch (err) {
       alert(err?.message || "Failed to approve selected users.");
@@ -1665,6 +1672,16 @@ const initPush = async () => {
   }
 };
 
+const renderAdminAccessStatus = () => {
+  if (!adminAccessStatus || !currentAdmin) return;
+  const role = currentAdmin.role || "unknown";
+  const staffRank = String(currentAdmin.staffRank || "").trim().toUpperCase();
+  const claimsAdmin = currentAdmin.claimsAdmin === true;
+  const claimsSuperAdmin = currentAdmin.claimsSuperAdmin === true;
+  const rankText = staffRank ? ` | rank=${staffRank}` : "";
+  adminAccessStatus.textContent = `Access: role=${role}${rankText} | claims.admin=${claimsAdmin} | claims.superAdmin=${claimsSuperAdmin}`;
+};
+
 const initAdmin = () => {
   faults = buildFaultCatalog();
   renderFaultItems();
@@ -1677,6 +1694,7 @@ const initAdmin = () => {
   initLogout();
   initListeners();
   initPush();
+  renderAdminAccessStatus();
 };
 
 onAuthStateChanged(auth, async (user) => {
@@ -1715,7 +1733,9 @@ onAuthStateChanged(auth, async (user) => {
     ...data,
     role: isSuperAdmin ? "superAdmin" : (isScrStaff ? "scr" : "admin"),
     isAdmin: true,
-    isSuperAdmin
+    isSuperAdmin,
+    claimsAdmin,
+    claimsSuperAdmin
   };
   initAdmin();
 });

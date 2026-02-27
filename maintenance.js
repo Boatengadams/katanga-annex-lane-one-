@@ -40,7 +40,7 @@ const LOCATION_STRUCTURE = {
     }
   },
   "east-wing": {
-    label: "East Wing",
+    label: "East Wings",
     subdivisions: {
       "lane-1": "Lane 1",
       "lane-2": "Lane 2",
@@ -48,7 +48,7 @@ const LOCATION_STRUCTURE = {
     }
   },
   "west-wing": {
-    label: "West Wing",
+    label: "West Wings",
     subdivisions: {
       "lane-1": "Lane 1",
       "lane-2": "Lane 2",
@@ -79,8 +79,8 @@ const TECHNICIAN_FAULT_TERMS = {
 };
 
 let currentProfile = null;
-let selectedArea = "annex";
-let selectedSubdivision = "lane-1";
+let selectedArea = "";
+let selectedSubdivision = "";
 let selectedRoom = "";
 let reportsCache = [];
 let reportsUnsub = null;
@@ -237,8 +237,8 @@ const countReportsForRoom = (areaKey, subdivisionKey, roomName) => getOpenReport
   .length;
 
 const setDefaultLocationSelection = () => {
-  selectedArea = "annex";
-  selectedSubdivision = "lane-1";
+  selectedArea = "";
+  selectedSubdivision = "";
   selectedRoom = "";
 };
 
@@ -262,6 +262,10 @@ const renderAreaTabs = () => {
 
 const renderSubdivisionTabs = () => {
   if (!subdivisionTabs) return;
+  if (!selectedArea) {
+    subdivisionTabs.innerHTML = "<p>Select a block to view its lanes/subdivisions.</p>";
+    return;
+  }
   const areaConfig = LOCATION_STRUCTURE[selectedArea];
   if (!areaConfig) {
     subdivisionTabs.innerHTML = "";
@@ -285,6 +289,14 @@ const renderSubdivisionTabs = () => {
 
 const renderRoomList = () => {
   if (!roomList) return;
+  if (!selectedArea) {
+    roomList.innerHTML = "";
+    return;
+  }
+  if (!selectedSubdivision) {
+    roomList.innerHTML = "<p>Select a lane/subdivision to view rooms.</p>";
+    return;
+  }
   const rooms = getRoomsForLocation(selectedArea, selectedSubdivision);
   if (!rooms.length) {
     roomList.innerHTML = "<p>No rooms configured for this selection.</p>";
@@ -308,6 +320,18 @@ const renderRoomList = () => {
 
 const renderReports = () => {
   if (!maintenanceReports) return;
+
+  if (!selectedArea) {
+    activeLocationHeading.textContent = "SELECT A BLOCK";
+    maintenanceReports.innerHTML = "<p>Select a block (Annex, East Wings, West Wings, Bridge) to continue.</p>";
+    return;
+  }
+  if (!selectedSubdivision) {
+    const areaLabelOnly = LOCATION_STRUCTURE[selectedArea]?.label || "";
+    activeLocationHeading.textContent = `${areaLabelOnly.toUpperCase()} SELECT A LANE`;
+    maintenanceReports.innerHTML = "<p>Select a lane/subdivision to load rooms and reports.</p>";
+    return;
+  }
 
   const areaLabel = LOCATION_STRUCTURE[selectedArea]?.label || "";
   const subdivisionLabel = LOCATION_STRUCTURE[selectedArea]?.subdivisions?.[selectedSubdivision] || "";
@@ -358,8 +382,7 @@ if (areaTabs) {
     const button = event.target.closest("button[data-area-tab]");
     if (!button) return;
     selectedArea = button.dataset.areaTab || selectedArea;
-    const firstSubdivision = Object.keys(LOCATION_STRUCTURE[selectedArea]?.subdivisions || {})[0] || "";
-    selectedSubdivision = firstSubdivision;
+    selectedSubdivision = "";
     selectedRoom = "";
     renderAll();
   });
